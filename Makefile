@@ -14,55 +14,64 @@
 # limitations under the License.
 #
 
-software_subdirs += software scripts
+config_subdirs += scripts
+software_subdirs += software
 hardware_subdirs += hardware
 action_subdirs += hardware/action_examples
 
-all: $(software_subdirs) $(hardware_subdirs)
+all: $(software_subdirs) $(config_subdirs) $(hardware_subdirs)
 
 # Only build if the subdirectory is really existent
-.PHONY: $(software_subdirs) $(hardware_subdirs)
+.PHONY: $(software_subdirs) $(config_subdirs) $(hardware_subdirs) $(action_subdirs)
 $(software_subdirs):
-	@if [ -d $@ ]; then	          \
+	@if [ -d $@ ]; then               \
 		$(MAKE) -C $@ || exit 1;  \
 	fi
 
 $(hardware_subdirs):
-	@if [ -d $@ ]; then		                                                                                         \
-		if [ -d "$(SNAP_ROOT)" ]; then	                                                                                 \
+	@if [ -d $@ ]; then                                                                                                      \
+		if [ -d "$(SNAP_ROOT)" ]; then                                                                                   \
 			$(MAKE) -C $@ || exit 1;                                                                                 \
-		else	                                                                                                         \
+		else                                                                                                             \
 			echo "WARNING: Environment variable SNAP_ROOT does not point to a directory.";                           \
 			echo "         Please prepare hardware environment (see hardware/README.md) before building hardware.";  \
-		fi	                                                                                                         \
+		fi                                                                                                               \
 	fi
 
 # Install/uninstall
 test install uninstall:
-	@for dir in $(software_subdirs); do		\
-		if [ -d $$dir ]; then	                \
+	@for dir in $(software_subdirs); do             \
+		if [ -d $$dir ]; then                   \
 			$(MAKE) -C $$dir $@ || exit 1;  \
-		fi	                                \
+		fi                                      \
 	done
 
 # Model build and config
 config model image:
-	@for dir in $(hardware_subdirs); do			                                                                         \
-		if [ -d $$dir ]; then		                                                                                         \
-			if [ -d "$(SNAP_ROOT)" ]; then	                                                                                 \
+	@for dir in $(hardware_subdirs); do                                                                                              \
+		if [ -d $$dir ]; then                                                                                                    \
+			if [ -d "$(SNAP_ROOT)" ]; then                                                                                   \
 				$(MAKE) -C $$dir $@ || exit 1;                                                                           \
-			else	                                                                                                         \
+			else                                                                                                             \
 				echo "WARNING: Environment variable SNAP_ROOT does not point to a directory.";                           \
-				echo "         Please prepare hardware environment (see hardware/README.md) before building hardware.";	 \
-			fi	                                                                                                         \
-		fi		                                                                                                         \
+				echo "         Please prepare hardware environment (see hardware/README.md) before building hardware.";  \
+			fi                                                                                                               \
+		fi                                                                                                                       \
+	done
+
+# Config
+menuconfig xconfig gconfig oldconfig:
+	@for dir in $(config_subdirs); do               \
+		if [ -d $$dir ]; then                   \
+			$(MAKE) -C $$dir $@ || exit 1;  \
+		fi                                      \
 	done
 
 clean:
-	@for dir in $(software_subdirs) $(hardware_subdirs) $(action_subdirs); do		\
-		if [ -d $$dir ]; then	                                                        \
-			$(MAKE) -C $$dir $@ || exit 1;                                          \
-		fi	                                                                        \
+	@for dir in $(software_subdirs) $(config_subdirs) $(hardware_subdirs) $(action_subdirs); do \
+		if [ -d $$dir ]; then                                                               \
+			$(MAKE) -C $$dir $@ || exit 1;                                              \
+		fi                                                                                  \
 	done
 	@find . -depth -name '*~'  -exec rm -rf '{}' \; -print
 	@find . -depth -name '.#*' -exec rm -rf '{}' \; -print
