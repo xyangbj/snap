@@ -121,8 +121,6 @@ if { ($fpga_card == "FGT") && ($sdram_used == "TRUE") } {
   add_files    -fileset sim_1 -norecurse -scan_for_includes $root_dir/sim/core/ddr4_dimm.sv  >> $log_file
   set_property used_in_synthesis false           [get_files $root_dir/sim/core/ddr4_dimm.sv]
 }
-update_compile_order -fileset sources_1 >> $log_file
-update_compile_order -fileset sim_1 >> $log_file
 
 # Add IPs
 # Donut IPs
@@ -177,7 +175,6 @@ if { $fpga_card == "KU3" } {
     export_ip_user_files -of_objects  [get_files "$root_dir/ip/ddr4sdram/ddr4sdram.xci"] -force >> $log_file
   }
 }
-update_compile_order -fileset sources_1 >> $log_file
 
 # Add NVME
 if { $nvme_used == TRUE } {
@@ -186,7 +183,6 @@ if { $nvme_used == TRUE } {
   update_ip_catalog  >> $log_file
   add_files -norecurse                          $root_dir/viv_project_tmp/nvme.srcs/sources_1/bd/nvme_top/nvme_top.bd  >> $log_file
   export_ip_user_files -of_objects  [get_files  $root_dir/viv_project_tmp/nvme.srcs/sources_1/bd/nvme_top/nvme_top.bd] -lib_map_path [list {modelsim=$root_dir/viv_project/framework.cache/compile_simlib/modelsim} {questa=$root_dir/viv_project/framework.cache/compile_simlib/questa} {ies=$root_dir/viv_project/framework.cache/compile_simlib/ies} {vcs=$root_dir/viv_project/framework.cache/compile_simlib/vcs} {riviera=$root_dir/viv_project/framework.cache/compile_simlib/riviera}] -force -quiet
-  update_compile_order -fileset sources_1
   puts "	                        generating NVMe output products"
   set_property synth_checkpoint_mode None [get_files  $root_dir/viv_project_tmp/nvme.srcs/sources_1/bd/nvme_top/nvme_top.bd] >> $log_file
   generate_target all                     [get_files  $root_dir/viv_project_tmp/nvme.srcs/sources_1/bd/nvme_top/nvme_top.bd] >> $log_file
@@ -202,11 +198,15 @@ puts "	                        importing PSL design checkpoint"
 read_checkpoint -cell b $build_dir/Checkpoint/b_route_design.dcp -strict >> $log_file
 
 # XDC
-# Donut XDC
 puts "	                        importing XDCs"
+# Donut XDC
 add_files -fileset constrs_1 -norecurse $root_dir/setup/donut_link.xdc
 set_property used_in_synthesis false [get_files  $root_dir/setup/donut_link.xdc]
-update_compile_order -fileset sources_1 >> $log_file
+
+# PSL XDC
+add_files -fileset constrs_1 -norecurse $root_dir/setup/snap_psl.xdc
+set_property used_in_synthesis false [get_files  $root_dir/setup/snap_psl.xdc]
+
 # DDR XDCs
 if { $fpga_card == "KU3" } {
   if { $bram_used == "TRUE" } {
@@ -230,6 +230,11 @@ if { $fpga_card == "KU3" } {
     add_files -fileset constrs_1 -norecurse  $root_dir/setup/FGT/snap_nvme.xdc
   }
 }
+
+puts "  	                        updating compile order"
+update_compile_order -fileset sources_1 >> $log_file
+update_compile_order -fileset constrs_1 >> $log_file
+update_compile_order -fileset sim_1 >> $log_file
 
 puts "	\[CREATE_FRAMEWORK....\] done"
 close_project >> $log_file
