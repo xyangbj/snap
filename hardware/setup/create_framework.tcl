@@ -25,7 +25,7 @@ set sim_dir         $root_dir/sim
 set fpga_part       $::env(FPGACHIP)
 set fpga_card       $::env(FPGACARD)
 set psl_dcp         [file tail $::env(PSL_DCP)]
-set write_user_dcp  $::env(WRITE_USER_DCP)]
+set write_user_dcp  $::env(WRITE_USER_DCP)
 set action_dir      $::env(ACTION_ROOT)
 set nvme_used       $::env(NVME_USED)
 set bram_used       $::env(BRAM_USED)
@@ -34,7 +34,8 @@ set simulator       $::env(SIMULATOR)
 set vivadoVer       [version -short]
 set log_dir         $::env(LOGS_DIR)
 set log_file        $log_dir/create_framework.log
-
+ puts  $write_user_dcp
+ puts  $fpga_card 
 if { [info exists ::env(HLS_SUPPORT)] == 1 } {
     set hls_support [string toupper $::env(HLS_SUPPORT)]
 } elseif { [string first "HLS" [string toupper $action_dir]] != -1 } {
@@ -211,8 +212,8 @@ read_checkpoint -cell b $root_dir/build/Checkpoints/$psl_dcp -strict >> $log_fil
 puts "	                        importing XDCs"
 add_files -fileset constrs_1 -norecurse $root_dir/setup/snap_link.xdc
 set_property used_in_synthesis false [get_files  $root_dir/setup/snap_link.xdc]
-update_compile_order -fileset sources_1 >> $log_file
-# DDR XDCs
+
+# Card spezivic XDCs
 if { $fpga_card == "KU3" } {
   if { $bram_used == "TRUE" } {
     add_files -fileset constrs_1 -norecurse $root_dir/setup/KU3/snap_refclk200.xdc 
@@ -236,9 +237,10 @@ if { $fpga_card == "KU3" } {
   }
   
   if { $write_user_dcp == "TRUE" } {
-    add_files -fileset constrs_1 -norecurse $root_dir/setup/snap_pblock.xdc
+    add_files -fileset constrs_1 -norecurse $root_dir/setup/FGT/snap_pblock.xdc
   }
 }
+update_compile_order -fileset constrs_1 >> $log_file
 
 puts "	\[CREATE_FRAMEWORK....\] done"
 close_project >> $log_file

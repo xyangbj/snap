@@ -71,7 +71,7 @@ puts [format "%-*s %-*s %-*s %-*s"  $widthCol1 "" $widthCol2 "start locking PSL"
 lock_design -level routing b > $log_dir/lock_design.log
 
 read_xdc ../setup/snap_impl.xdc >> $logfile
-read_xdc ../setup/snap_pblock.xdc >> $logfile
+#read_xdc ../setup/snap_pblock.xdc >> $logfile
 
 ## 
 ## optimizing design
