@@ -16,12 +16,13 @@
 #
 #-----------------------------------------------------------
 
-set log_dir      $::env(LOGS_DIR)
-set log_file     $log_dir/snap_build.log
-set fpgacard     $::env(FPGACARD)
-set sdram_used   $::env(SDRAM_USED)
-set nvme_used    $::env(NVME_USED)
-set bram_used    $::env(BRAM_USED)
+set log_dir         $::env(LOGS_DIR)
+set log_file        $log_dir/snap_build.log
+set fpgacard        $::env(FPGACARD)
+set sdram_used      $::env(SDRAM_USED)
+set nvme_used       $::env(NVME_USED)
+set bram_used       $::env(BRAM_USED)
+set write_user_dcp  $::env(WRITE_USER_DCP)]
 
 #timing_lablimit  
 if { [info exists ::env(TIMING_LABLIMIT)] == 1 } {
@@ -70,6 +71,7 @@ puts [format "%-*s %-*s %-*s %-*s"  $widthCol1 "" $widthCol2 "start locking PSL"
 lock_design -level routing b > $log_dir/lock_design.log
 
 read_xdc ../setup/snap_impl.xdc >> $logfile
+read_xdc ../setup/snap_pblock.xdc >> $logfile
 
 ## 
 ## optimizing design
@@ -162,7 +164,7 @@ if { $bram_used == "TRUE" } {
     set RAM_TYPE noSDRAM
 }
 append IMAGE_NAME [format {_%s_%s_%s} $RAM_TYPE $fpgacard $TIMING_TNS]
- 
+
 ## 
 ## writing bitstream
 set step     write_bitstream
@@ -176,6 +178,14 @@ if { [catch "$command > $logfile" errMsg] } {
 
 } else {
   write_cfgmem    -format bin -loadbit "up 0x0 ./Images/$IMAGE_NAME.bit" -file ./Images/$IMAGE_NAME  -size 128 -interface  BPIx16 -force >> $logfile
+}
+
+## 
+## writing user DCP for cloud provider 
+if { $write_user_dcp == "TRUE" } {
+  set step     write_userbitstream
+  puts [format "%-*s %-*s %-*s %-*s"  $widthCol1 "" $widthCol2 "writing user DCP" $widthCol3 "" $widthCol4 "[clock format [clock seconds] -format %H:%M:%S]"]
+  write_checkpoint   -force -cell [get_cells -quiet [list a0]] ./Checkpoints/$IMAGE_NAME.dcp 
 }
 
 ## 

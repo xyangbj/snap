@@ -17,6 +17,8 @@
 #-----------------------------------------------------------
 
 create_pblock snap_core
-add_cells_to_pblock [get_pblocks snap_core] [get_cells -quiet [list a0/snap_core_i]] -clear_locs
-resize_pblock [get_pblocks snap_core] -add {CLOCKREGION_X3Y3:CLOCKREGION_X5Y3}
+add_cells_to_pblock [get_pblocks snap_core] [get_cells -quiet [list a0]] -clear_locs
+resize_pblock [get_pblocks snap_core] -add {CLOCKREGION_X0Y0:CLOCKREGION_X3Y4}
+resize_pblock [get_pblocks snap_core] -add {CLOCKREGION_X4Y4}
+resize_pblock [get_pblocks snap_core] -add {CLOCKREGION_X5Y4:CLOCKREGION_X5Y3}
 

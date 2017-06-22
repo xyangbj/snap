@@ -49,6 +49,10 @@ ifndef NVME_USED
 	export NVME_USED=FALSE
 endif
 
+ifndef WRITE_USER_DCP
+  export WRITE_USER_DCP=FALSE
+endif
+
 ## variables only for this Makefile
 BUILD_DIR=$(SNAP_HARDWARE_ROOT)/build
 SNAP_HDL_CORE=$(SNAP_HARDWARE_ROOT)/hdl/core
@@ -99,6 +103,10 @@ check_snap_settings:
 		echo "SDRAM_USED:     $(SDRAM_USED)"; \
 		echo "ILA_DEBUG:      $(ILA_DEBUG)"; \
 		echo "NUM_OF_ACTIONS: $(NUM_OF_ACTIONS)"; \
+		exit 1; \
+	fi
+	@if [[ $(WRITE_USER_DCP) == "TRUE" && $(FPGACARD) != "FGT" ]];then \
+		echo "The WRITE_USER_DCP function is only available for the FGT card"; \
 		exit 1; \
 	fi
 
