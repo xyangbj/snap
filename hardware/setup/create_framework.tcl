@@ -34,8 +34,7 @@ set simulator       $::env(SIMULATOR)
 set vivadoVer       [version -short]
 set log_dir         $::env(LOGS_DIR)
 set log_file        $log_dir/create_framework.log
- puts  $write_user_dcp
- puts  $fpga_card 
+
 if { [info exists ::env(HLS_SUPPORT)] == 1 } {
     set hls_support [string toupper $::env(HLS_SUPPORT)]
 } elseif { [string first "HLS" [string toupper $action_dir]] != -1 } {
@@ -235,12 +234,22 @@ if { $fpga_card == "KU3" } {
     add_files -fileset constrs_1 -norecurse  $root_dir/setup/FGT/snap_refclk100.xdc
     add_files -fileset constrs_1 -norecurse  $root_dir/setup/FGT/snap_nvme.xdc
   }
-  
-  if { $write_user_dcp == "TRUE" } {
-    add_files -fileset constrs_1 -norecurse $root_dir/setup/FGT/snap_pblock.xdc
-  }
 }
 update_compile_order -fileset constrs_1 >> $log_file
+
+# SET PSL to OOC
+if { $fpga_card == "FGT" } {
+  if { $write_user_dcp == "TRUE" } {
+    puts "	                        setting psl_accel as a OOC modul"
+    add_files -fileset constrs_1 -norecurse $root_dir/setup/FGT/snap_pblock.xdc       >> $log_file 
+    add_files -fileset constrs_1 -norecurse  $root_dir/setup/snap_psl_accel_ooc.xdc   >> $log_file 
+    update_compile_order -fileset constrs_1                                           >> $log_file
+    
+    create_fileset -blockset -define_from psl_accel psl_accel                                                           >> $log_file
+    move_files -fileset psl_accel                                   [get_files  $root_dir/setup/snap_psl_accel_ooc.xdc] >> $log_file
+    set_property USED_IN {out_of_context synthesis implementation}  [get_files  $root_dir/setup/snap_psl_accel_ooc.xdc] >> $log_file
+  }
+}
 
 puts "	\[CREATE_FRAMEWORK....\] done"
 close_project >> $log_file
