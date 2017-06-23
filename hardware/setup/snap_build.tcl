@@ -46,6 +46,24 @@ open_project ../viv_project/framework.xpr >> $log_file
 
 ## 
 ## synthesis project
+set step      synth_design_ooc
+set logfile   $log_dir/${step}.log
+set directive [get_property STEPS.SYNTH_DESIGN.ARGS.DIRECTIVE [get_runs psl_accel_synth_1]]
+set command   "synth_design -mode out_of_context -directive $directive"
+puts [format "%-*s %-*s %-*s %-*s"  $widthCol1 "" $widthCol2 "start synthesis" $widthCol3 "with directive: $directive" $widthCol4 "[clock format [clock seconds] -format %H:%M:%S]"]
+if { [catch "$command > $logfile" errMsg] } {
+  puts [format "%-*s %-*s %-*s %-*s"  $widthCol1 "" $widthCol2 "" $widthCol3 "ERROR: synthesis failed" $widthCol4 "" ]
+  puts [format "%-*s %-*s %-*s %-*s"  $widthCol1 "" $widthCol2 "" $widthCol3 "       please check $logfile" $widthCol4 "" ]
+
+  if { ![catch {current_instance}] } {
+      write_checkpoint -force ./Checkpoints/${step}_error.dcp    >> $logfile
+    exit 42
+  }
+} else {
+  write_checkpoint   -force ./Checkpoints/${step}.dcp          >> $logfile
+  report_utilization -file  ./Reports/${step}_utilization.rpt -quiet
+}
+
 set step      synth_design
 set logfile   $log_dir/${step}.log
 set directive [get_property STEPS.SYNTH_DESIGN.ARGS.DIRECTIVE [get_runs synth_1]]
