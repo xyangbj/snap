@@ -18,7 +18,7 @@
 ############################################################################
 ############################################################################
 
-## variables that other scripts needed
+## variables required by other scripts
 export SNAP_HARDWARE_ROOT=$(SNAP_ROOT)/hardware
 export LOGS_DIR=$(SNAP_HARDWARE_ROOT)/logs
 
@@ -47,6 +47,10 @@ endif
 
 ifndef NVME_USED
 	export NVME_USED=FALSE
+endif
+
+ifndef PR_CONFIG
+	export PR_CONFIG=FALSE
 endif
 
 ## variables only for this Makefile
@@ -130,9 +134,9 @@ setup_environment:
 	@mkdir -p $(LOGS_DIR);
 	@mkdir -p $(BUILD_DIR)/Images;
 	@mkdir -p $(BUILD_DIR)/Checkpoints;
-	@ln -f -s $(SNAP_HARDWARE_ROOT)/setup/snap_build.tcl     $(BUILD_DIR)/snap_build.tcl;
+	@ln -f -s $(SNAP_HARDWARE_ROOT)/setup/snap_build.tcl       $(BUILD_DIR)/snap_build.tcl;
 	@ln -f -s $(SNAP_HARDWARE_ROOT)/setup/snap_cloud_build.tcl $(BUILD_DIR)/snap_cloud_build.tcl;
-	@cp -p $(PSL_DCP)                                        $(BUILD_DIR)/Checkpoints/;
+	@cp -p $(PSL_DCP)                                          $(BUILD_DIR)/Checkpoints/;
 	@if [ $(FPGACARD) = "KU3" ]; then \
 		ln -f -s $(SNAP_HDL_CORE)/psl_fpga_ku3.vhd_source  $(SNAP_HDL_CORE)/psl_fpga.vhd_source; \
 		ln -f -s $(SNAP_HDL_CORE)/psl_accel_ku3.vhd_source $(SNAP_HDL_CORE)/psl_accel.vhd_source; \
@@ -201,6 +205,9 @@ patch_NVMe:
 	fi
 
 image: snap_config patch_version
+	@if [ `echo "$(PR_CONFIG)" | tr a-z A-Z` = "TRUE" ]; then \
+		echo -e "\tTarget image not allowed for PR configuration!"; exit -1; \
+	fi
 	@echo -e "\t[BUILD IMAGE.........] start `date`"
 	@cd $(BUILD_DIR) && vivado -quiet -mode batch -source snap_build.tcl -notrace -log $(LOGS_DIR)/snap_build.log -journal $(LOGS_DIR)/snap_build.jou
 	@rm -r -f .bitstream_name.txt
@@ -208,6 +215,9 @@ image: snap_config patch_version
 #	@grep -A6 "Design Timing Summary" $(BUILD_DIR)/Reports/timing_summary.rpt | egrep -v "^$|^\-\-"
 
 cloud_image: snap_config patch_version
+	@if [ `echo "$(PR_CONFIG)" | tr a-z A-Z` != "TRUE" ]; then \
+		echo -e "\tTarget cloud_image is only allowed for PR configuration!"; exit -1; \
+	fi
 	@echo -e "\t[BUILD CLOUD IMAGE...] start `date`"
 	@cd $(BUILD_DIR) && vivado -quiet -mode batch -source snap_cloud_build.tcl -notrace -log $(LOGS_DIR)/snap_cloud_build.log -journal $(LOGS_DIR)/snap_cloud_build.jou
 	@echo -e "\t[BUILD CLOUD IMAGE...] done  `date`"
