@@ -113,9 +113,10 @@ set_property top psl_fpga [current_fileset]
 # Action Files
 if { $pr_config == "TRUE" } {
   # for Partial Reconfiguration Region
-  add_files -scan_for_includes $action_dir/ -of_objects [get_reconfig_modules user_action]
+  add_files -scan_for_includes -norecurse $hdl_dir/core/psl_accel_types.vhd -of_objects [get_reconfig_modules user_action] >> $log_file
+  add_files -scan_for_includes $action_dir/ -of_objects [get_reconfig_modules user_action] >> $log_file
 } else {
-  add_files -fileset sources_1 -scan_for_includes $action_dir/
+  add_files -fileset sources_1 -scan_for_includes $action_dir/ >> $log_file
 }
 # Sim Files
 set_property SOURCE_SET sources_1 [get_filesets sim_1]

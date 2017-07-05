@@ -23,32 +23,32 @@ USE ieee.std_logic_misc.all;
 USE ieee.std_logic_unsigned.all;
 USE ieee.numeric_std.all;
 
+USE work.psl_accel_types.ALL;
+
 PACKAGE action_types IS
 
-CONSTANT    C_M_AXI_CARD_MEM0_ID_WIDTH       : integer   := 1;
-CONSTANT    C_M_AXI_CARD_MEM0_ADDR_WIDTH     : integer   := 33;
-CONSTANT    C_M_AXI_CARD_MEM0_DATA_WIDTH     : integer   := 512;
-CONSTANT    C_M_AXI_CARD_MEM0_AWUSER_WIDTH   : integer   := 1;
-CONSTANT    C_M_AXI_CARD_MEM0_ARUSER_WIDTH   : integer   := 1;
-CONSTANT    C_M_AXI_CARD_MEM0_WUSER_WIDTH    : integer   := 1;
-CONSTANT    C_M_AXI_CARD_MEM0_RUSER_WIDTH    : integer   := 1;
-CONSTANT    C_M_AXI_CARD_MEM0_BUSER_WIDTH    : integer   := 1;
+CONSTANT    C_M_AXI_CARD_MEM0_ID_WIDTH       : integer   := C_DDR_AXI_ID_WIDTH;
+CONSTANT    C_M_AXI_CARD_MEM0_ADDR_WIDTH     : integer   := C_DDR_AXI_ADDR_WIDTH;
+CONSTANT    C_M_AXI_CARD_MEM0_DATA_WIDTH     : integer   := C_DDR_AXI_DATA_WIDTH;
+CONSTANT    C_M_AXI_CARD_MEM0_AWUSER_WIDTH   : integer   := C_DDR_AXI_AWUSER_WIDTH;
+CONSTANT    C_M_AXI_CARD_MEM0_ARUSER_WIDTH   : integer   := C_DDR_AXI_ARUSER_WIDTH;
+CONSTANT    C_M_AXI_CARD_MEM0_WUSER_WIDTH    : integer   := C_DDR_AXI_WUSER_WIDTH;
+CONSTANT    C_M_AXI_CARD_MEM0_RUSER_WIDTH    : integer   := C_DDR_AXI_RUSER_WIDTH;
+CONSTANT    C_M_AXI_CARD_MEM0_BUSER_WIDTH    : integer   := C_DDR_AXI_BUSER_WIDTH;
 
     -- Parameters for Axi Slave Bus Interface AXI_CTRL_REG
-CONSTANT    C_S_AXI_CTRL_REG_DATA_WIDTH      : integer   := 32;
-CONSTANT    C_S_AXI_CTRL_REG_ADDR_WIDTH      : integer   := 32;
+CONSTANT    C_S_AXI_CTRL_REG_DATA_WIDTH      : integer   := C_REG_DATA_WIDTH;
+CONSTANT    C_S_AXI_CTRL_REG_ADDR_WIDTH      : integer   := C_REG_ADDR_WIDTH;
 
-CONSTANT    INT_BITS                         : integer   := 3;
-CONSTANT    CONTEXT_BITS                     : integer   := 8;
     -- Parameters for Axi Master Bus Interface AXI_HOST_MEM : to Host memory
-CONSTANT    C_M_AXI_HOST_MEM_ID_WIDTH        : integer   := 1;
-CONSTANT    C_M_AXI_HOST_MEM_ADDR_WIDTH      : integer   := 64;
-CONSTANT    C_M_AXI_HOST_MEM_DATA_WIDTH      : integer   := 512;
-CONSTANT    C_M_AXI_HOST_MEM_AWUSER_WIDTH    : integer   := 1;
-CONSTANT    C_M_AXI_HOST_MEM_ARUSER_WIDTH    : integer   := 1;
-CONSTANT    C_M_AXI_HOST_MEM_WUSER_WIDTH     : integer   := 1;
-CONSTANT    C_M_AXI_HOST_MEM_RUSER_WIDTH     : integer   := 1;
-CONSTANT    C_M_AXI_HOST_MEM_BUSER_WIDTH     : integer   := 1;
+CONSTANT    C_M_AXI_HOST_MEM_ID_WIDTH        : integer   := C_HOST_AXI_ID_WIDTH;
+CONSTANT    C_M_AXI_HOST_MEM_ADDR_WIDTH      : integer   := C_HOST_AXI_ADDR_WIDTH;
+CONSTANT    C_M_AXI_HOST_MEM_DATA_WIDTH      : integer   := C_HOST_AXI_DATA_WIDTH;
+CONSTANT    C_M_AXI_HOST_MEM_AWUSER_WIDTH    : integer   := CONTEXT_BITS;
+CONSTANT    C_M_AXI_HOST_MEM_ARUSER_WIDTH    : integer   := CONTEXT_BITS;
+CONSTANT    C_M_AXI_HOST_MEM_WUSER_WIDTH     : integer   := C_HOST_AXI_WUSER_WIDTH;
+CONSTANT    C_M_AXI_HOST_MEM_RUSER_WIDTH     : integer   := C_HOST_AXI_RUSER_WIDTH;
+CONSTANT    C_M_AXI_HOST_MEM_BUSER_WIDTH     : integer   := C_HOST_AXI_BUSER_WIDTH;
 
 END action_types;
 
@@ -63,6 +63,8 @@ USE ieee.std_logic_1164.all;
 USE ieee.std_logic_misc.all;
 USE ieee.std_logic_unsigned.all;
 USE ieee.numeric_std.all;
+
+USE work.psl_accel_types.ALL;
 USE work.action_types.all;
 
 
