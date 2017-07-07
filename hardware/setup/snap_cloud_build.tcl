@@ -79,6 +79,8 @@ file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_opt.dcp          
 file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_physopt.dcp               ./Checkpoints/framework_physopt.dcp
 file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_placed.dcp                ./Checkpoints/framework_placed.dcp
 file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_routed.dcp                ./Checkpoints/framework_routed.dcp
+file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_routed_bb.dcp             ./Checkpoints/snap_static_region_routed.dcp
+file copy -force ../viv_project/framework.runs/impl_1/a0_action_w_user_action_routed.dcp ./Checkpoints/user_action_routed.dcp
 file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_route_status.rpt          ./Reports/framework_route_status.rpt
 file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_timing_summary_routed.rpt ./Reports/framework_timing_summary_routed.rpt
 
