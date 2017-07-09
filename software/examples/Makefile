@@ -50,9 +50,12 @@ snap_bfs_objs = action_bfs.o
 snap_intersect: action_intersect.o
 snap_intersect_objs = action_intersect.o
 
+snap_hls_nvme: action_hls_nvme.o
+snap_hls_nvme_objs = action_hls_nvme.o
+
 projs += snap_search snap_memcopy snap_checksum snap_hashjoin snap_bfs	\
 	snap_intersect snap_example snap_example_ddr snap_example_set	\
-	snap_example_nvme
+	snap_example_nvme snap_hls_nvme
 
 # Include sub-Makefile if there are any
 -include *.mk
