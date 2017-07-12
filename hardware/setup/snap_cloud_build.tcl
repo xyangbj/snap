@@ -30,6 +30,13 @@ if { [info exists ::env(TIMING_LABLIMIT)] == 1 } {
   set timing_lablimit "-250"
 }
 
+#build cloud bitfile
+if { [info exists ::env(CLOUD_BUILD_BITFILE)] == 1 } {
+    set cloud_build_bitfile [string toupper $::env(CLOUD_BUILD_BITFILE)]
+} else {
+  set cloud_build_bitfile "FALSE"
+}
+
 #Define widths of each column
 set widthCol1 31
 set widthCol2 23
@@ -106,6 +113,48 @@ if { [expr $TIMING_TNS >= 0 ] } {
 } else {
     puts [format "%-*s %-*s %-*s %-*s"  $widthCol1 "" $widthCol2 "" $widthCol3 "WARNING: TIMING FAILED, but may be OK for lab use" $widthCol4 "" ]
     set remove_tmp_files TRUE
+}
+
+if { $cloud_build_bitfile == "TRUE" } {
+ ##
+  ## generating bitstream name
+  set IMAGE_NAME [exec cat ../.bitstream_name.txt]
+  append IMAGE_NAME [expr {$nvme_used == "TRUE" ? "_NVME" : ""}]
+  if { $bram_used == "TRUE" } {
+    set RAM_TYPE BRAM
+  } elseif { $sdram_used == "TRUE" } {
+    set RAM_TYPE SDRAM
+  } else {
+    set RAM_TYPE noSDRAM
+  }
+  append IMAGE_NAME [format {_%s_%s_%s} $RAM_TYPE $fpgacard $TIMING_TNS]
+
+  open_run     impl_1 -name impl_1 >> $log_file
+
+  ##
+  ### writing bitstream
+  set step write_bitstream
+  set logfile $log_dir/${step}.log
+  set command "write_bitstream -force -file ./Images/$IMAGE_NAME"
+  puts [format "%-*s %-*s %-*s %-*s" $widthCol1 "" $widthCol2 "generating bitstreams" $widthCol3 "type: user image" $widthCol4 "[clock format [clock seconds] -format %H:%M:%S]"]
+
+  if { [catch "$command > $logfile" errMsg] } {
+    puts [format "%-*s %-*s %-*s %-*s" $widthCol1 "" $widthCol2 "" $widthCol3 "ERROR: write_bitstream failed" $widthCol4 "" ]
+    puts [format "%-*s %-*s %-*s %-*s" $widthCol1 "" $widthCol2 "" $widthCol3 " please check $logfile" $widthCol4 "" ]
+  } else {
+    write_cfgmem -format bin -loadbit "up 0x0 ./Images/$IMAGE_NAME.bit" -file ./Images/$IMAGE_NAME -size 128 -interface BPIx16 -force >> $logfile
+  }
+
+}
+
+##
+## removing unnecessary files
+if { $remove_tmp_files == "TRUE" } {
+  puts [format "%-*s %-*s %-*s %-*s" $widthCol1 "" $widthCol2 "removing temp files" $widthCol3 "" $widthCol4 "[clock format [clock seconds] -format %H:%M:%S]"]
+  exec rm -rf ./Checkpoints/framework_synth.dcp
+  exec rm -rf ./Checkpoints/framework_opt.dcp
+  exec rm -rf ./Checkpoints/framework_physopt.dcp
+  exec rm -rf ./Checkpoints/framework_placed.dcp
 }
 
 close_project  >> $log_file
