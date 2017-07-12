@@ -69,7 +69,7 @@ SNAP_CONFIG_FILES=$(SNAP_HDL_CORE)/psl_fpga.vhd \
                   $(SNAP_SIM_CORE)/top.sv
 
 
-.PHONY: all clean gitclean check_snap_settings check_denali model action_config setup_environment create_environment config patch_version patch_NVMe image cloud_image snap_config snap_config_start pslse software xsim irun questa
+.PHONY: all clean gitclean check_snap_settings check_denali model action_config setup_environment create_environment config patch_version patch_NVMe image snap_static_region snap_config snap_config_start pslse software xsim irun questa
 
 all: config model image
 
@@ -125,8 +125,6 @@ check_denali:
 		fi \
 	fi
 
-
-
 setup_environment:
 	@echo -e "\t[COPY................] psl build env";
 	@mkdir -p $(BUILD_DIR);
@@ -134,16 +132,16 @@ setup_environment:
 	@mkdir -p $(LOGS_DIR);
 	@mkdir -p $(BUILD_DIR)/Images;
 	@mkdir -p $(BUILD_DIR)/Checkpoints;
-	@ln -f -s $(SNAP_HARDWARE_ROOT)/setup/snap_build.tcl       $(BUILD_DIR)/snap_build.tcl;
-	@ln -f -s $(SNAP_HARDWARE_ROOT)/setup/snap_cloud_build.tcl $(BUILD_DIR)/snap_cloud_build.tcl;
-	@cp -p $(PSL_DCP)                                          $(BUILD_DIR)/Checkpoints/;
+	@ln -f -s $(SNAP_HARDWARE_ROOT)/setup/snap_build.tcl         $(BUILD_DIR)/snap_build.tcl;
+	@ln -f -s $(SNAP_HARDWARE_ROOT)/setup/snap_static_region.tcl $(BUILD_DIR)/snap_static_region.tcl;
+	@cp -p $(PSL_DCP)                                            $(BUILD_DIR)/Checkpoints/;
 	@if [ $(FPGACARD) = "KU3" ]; then \
-		ln -f -s $(SNAP_HDL_CORE)/psl_fpga_ku3.vhd_source  $(SNAP_HDL_CORE)/psl_fpga.vhd_source; \
-		ln -f -s $(SNAP_HDL_CORE)/psl_accel_ku3.vhd_source $(SNAP_HDL_CORE)/psl_accel.vhd_source; \
+		ln -f -s $(SNAP_HDL_CORE)/psl_fpga_ku3.vhd_source    $(SNAP_HDL_CORE)/psl_fpga.vhd_source; \
+		ln -f -s $(SNAP_HDL_CORE)/psl_accel_ku3.vhd_source   $(SNAP_HDL_CORE)/psl_accel.vhd_source; \
 	fi
 	@if [ $(FPGACARD) = "FGT" ]; then \
-		ln -f -s $(SNAP_HDL_CORE)/psl_fpga_fgt.vhd_source  $(SNAP_HDL_CORE)/psl_fpga.vhd_source; \
-		ln -f -s $(SNAP_HDL_CORE)/psl_accel_fgt.vhd_source $(SNAP_HDL_CORE)/psl_accel.vhd_source; \
+		ln -f -s $(SNAP_HDL_CORE)/psl_fpga_fgt.vhd_source    $(SNAP_HDL_CORE)/psl_fpga.vhd_source; \
+		ln -f -s $(SNAP_HDL_CORE)/psl_accel_fgt.vhd_source   $(SNAP_HDL_CORE)/psl_accel.vhd_source; \
 	fi
 
 %.vhd: %.vhd_source
@@ -212,17 +210,27 @@ image: snap_config patch_version
 	@cd $(BUILD_DIR) && vivado -quiet -mode batch -source snap_build.tcl -notrace -log $(LOGS_DIR)/snap_build.log -journal $(LOGS_DIR)/snap_build.jou
 	@rm -r -f .bitstream_name.txt
 	@echo -e "\t[BUILD IMAGE.........] done  `date`"
-#	@grep -A6 "Design Timing Summary" $(BUILD_DIR)/Reports/timing_summary.rpt | egrep -v "^$|^\-\-"
 
-cloud_image: snap_config patch_version
+snap_static_region: snap_config patch_version
 	@if [ `echo "$(USE_PRFLOW)" | tr a-z A-Z` != "TRUE" ]; then \
 		echo -e "\tMakefile target $@ is only allowed for PR flow!"; exit -1; \
 	fi
-	@echo -e "\t[BUILD CLOUD IMAGE...] start `date`"
-	@cd $(BUILD_DIR) && vivado -quiet -mode batch -source snap_cloud_build.tcl -notrace -log $(LOGS_DIR)/snap_cloud_build.log -journal $(LOGS_DIR)/snap_cloud_build.jou
-	@echo -e "\t[BUILD CLOUD IMAGE...] done  `date`"
+	@echo -e "\t[SNAP STATIC REGION...] Creating black boxed DCP: start `date`"
+	@cd $(BUILD_DIR) && vivado -quiet -mode batch -source snap_static_region.tcl -notrace -log $(LOGS_DIR)/snap_static_region.log -journal $(LOGS_DIR)/snap_static_region.jou
+	@echo -e "\t[SNAP STATIC REGION...] done  `date`"
 	@rm -r -f .bitstream_name.txt
-#	@grep -A6 "Design Timing Summary" $(BUILD_DIR)/Reports/timing_summary_routed.rpt | egrep -v "^$|^\-\-"
+
+combine_dcps: setup_environment
+	@echo -e "\t[COMBINING DCPS......] start `date`";
+	@if [ ! -d "$(DCP_ROOT)" ]; then \
+		echo "Missing path to DCP checkpoints"; \
+		echo "Please check the following variable before calling make!"; \
+		echo "DCP_ROOT:       $(DCP_ROOT)"; \
+		exit 1; \
+	fi
+	@echo -e "\t                        using `vivado -version |grep Vivado`"
+	@cd $(SNAP_HARDWARE_ROOT)/setup                                    && vivado -quiet -mode batch -source combine_dcps.tcl -notrace -log $(LOGS_DIR)/combine_dcps.log  -journal $(LOGS_DIR)/combine_dcps.jou
+	@echo -e "\t[COMBINING DCPS......] done `date`"
 
 model: check_denali pslse software snap_config patch_version $(SIMULATOR)
 

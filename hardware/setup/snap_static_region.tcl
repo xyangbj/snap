@@ -17,24 +17,13 @@
 #-----------------------------------------------------------
 
 set log_dir      $::env(LOGS_DIR)
-set log_file     $log_dir/snap_build.log
-set fpgacard     $::env(FPGACARD)
-set sdram_used   $::env(SDRAM_USED)
-set nvme_used    $::env(NVME_USED)
-set bram_used    $::env(BRAM_USED)
+set log_file     $log_dir/snap_static_region.log
 
 #timing_lablimit
 if { [info exists ::env(TIMING_LABLIMIT)] == 1 } {
     set timing_lablimit [string toupper $::env(TIMING_LABLIMIT)]
 } else {
   set timing_lablimit "-250"
-}
-
-#build cloud bitfile
-if { [info exists ::env(CLOUD_BUILD_BITFILE)] == 1 } {
-    set cloud_build_bitfile [string toupper $::env(CLOUD_BUILD_BITFILE)]
-} else {
-  set cloud_build_bitfile "FALSE"
 }
 
 #Define widths of each column
@@ -53,8 +42,8 @@ puts [format "%-*s %-*s %-*s %-*s"  $widthCol1 "" $widthCol2 "start synthesis" $
 reset_run    synth_1 >> $log_file
 launch_runs  synth_1 >> $log_file
 wait_on_run  synth_1 >> $log_file
-file copy -force ../viv_project/framework.runs/synth_1/psl_fpga.dcp                       ./Checkpoints/framework_synth.dcp
-file copy -force ../viv_project/framework.runs/synth_1/psl_fpga_utilization_synth.rpt     ./Reports/framework_utilization_synth.rpt
+file copy -force ../viv_project/framework.runs/synth_1/psl_fpga.dcp                       ./Checkpoints/snap_and_action_synth.dcp
+file copy -force ../viv_project/framework.runs/synth_1/psl_fpga_utilization_synth.rpt     ./Reports/snap_and_action_utilization_synth.rpt
 
 puts [format "%-*s %-*s %-*s %-*s"  $widthCol1 "" $widthCol2 "start action synthesis" $widthCol3  "" $widthCol4  "[clock format [clock seconds] -format %H:%M:%S]"]
 reset_run    user_action_synth_1 >> $log_file
@@ -81,15 +70,17 @@ launch_runs  impl_1 >> $log_file
 wait_on_run  impl_1 >> $log_file
 
 
-puts [format "%-*s %-*s %-*s %-*s"  $widthCol1 "" $widthCol2 "collecting reports and checkpoints" $widthCol3  "" $widthCol4  "[clock format [clock seconds] -format %H:%M:%S]"]
-file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_opt.dcp                   ./Checkpoints/framework_opt.dcp
-file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_physopt.dcp               ./Checkpoints/framework_physopt.dcp
-file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_placed.dcp                ./Checkpoints/framework_placed.dcp
-file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_routed.dcp                ./Checkpoints/framework_routed.dcp
-file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_routed_bb.dcp             ./Checkpoints/snap_static_region_routed.dcp
-file copy -force ../viv_project/framework.runs/impl_1/a0_action_w_user_action_routed.dcp ./Checkpoints/user_action_routed.dcp
-file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_route_status.rpt          ./Reports/framework_route_status.rpt
-file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_timing_summary_routed.rpt ./Reports/framework_timing_summary_routed.rpt
+puts [format "%-*s %-*s %-*s"  $widthCol1 "" [expr $widthCol2 + $widthCol3 + 1] "collecting reports and checkpoints" $widthCol4  "[clock format [clock seconds] -format %H:%M:%S]"]
+file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_opt.dcp                         ./Checkpoints/snap_and_action_opt.dcp
+file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_physopt.dcp                     ./Checkpoints/snap_and_action_physopt.dcp
+file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_placed.dcp                      ./Checkpoints/snap_and_action_placed.dcp
+file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_routed.dcp                      ./Checkpoints/snap_and_action_routed.dcp
+file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_postroute_physopt.dcp           ./Checkpoints/snap_and_action_postroute_physopt.dcp
+file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_postroute_physopt_bb.dcp        ./Checkpoints/snap_static_region_bb.dcp
+file copy -force ../viv_project/framework.runs/impl_1/a0_action_w_user_action_routed.dcp       ./Checkpoints/user_action_routed.dcp
+file copy -force ../viv_project/framework.runs/impl_1/a0_action_w_user_action_post_routed.dcp  ./Checkpoints/user_action.dcp
+file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_route_status.rpt                ./Reports/snap_and_action_route_status.rpt
+file copy -force ../viv_project/framework.runs/impl_1/psl_fpga_timing_summary_routed.rpt       ./Reports/snap_and_action_timing_summary_routed.rpt
 
 ##
 ## generating reports
@@ -102,12 +93,12 @@ report_drc            -quiet -ruledeck bitstream_checks -name psl_fpga -file ./R
 ##
 ## checking timing
 ## Extract timing information, change ns to ps, remove leading 0's in number to avoid treatment as octal.
-set TIMING_TNS [exec grep -A6 "Design Timing Summary" ./Reports/timing_summary.rpt | tail -n 1 | tr -s " " | cut -d " " -f 2 | tr -d "." | sed {s/^\(\-*\)0*\([0-9]*\)/\1\2/}]
-puts [format "%-*s %-*s %-*s %-*s"  $widthCol1 "" $widthCol2 "Timing (TNS)" $widthCol3 "$TIMING_TNS ps" $widthCol4 "" ]
-if { [expr $TIMING_TNS >= 0 ] } {
+set TIMING_WNS [exec grep -A6 "Design Timing Summary" ./Reports/timing_summary.rpt | tail -n 1 | tr -s " " | cut -d " " -f 2 | tr -d "." | sed {s/^\(\-*\)0*\([1-9]*[0-9]\)/\1\2/}]
+puts [format "%-*s %-*s %-*s %-*s"  $widthCol1 "" $widthCol2 "Timing (WNS)" $widthCol3 "$TIMING_WNS ps" $widthCol4 "" ]
+if { [expr $TIMING_WNS >= 0 ] } {
     puts [format "%-*s %-*s %-*s %-*s"  $widthCol1 "" $widthCol2 "" $widthCol3 "TIMING OK" $widthCol4 "" ]
     set remove_tmp_files TRUE
-} elseif { [expr $TIMING_TNS < $timing_lablimit ] } {
+} elseif { [expr $TIMING_WNS < $timing_lablimit ] } {
     puts [format "%-*s %-*s %-*s %-*s"  $widthCol1 "" $widthCol2 "" $widthCol3 "ERROR: TIMING FAILED" $widthCol4 "" ]
     exit 42
 } else {
@@ -115,46 +106,15 @@ if { [expr $TIMING_TNS >= 0 ] } {
     set remove_tmp_files TRUE
 }
 
-if { $cloud_build_bitfile == "TRUE" } {
- ##
-  ## generating bitstream name
-  set IMAGE_NAME [exec cat ../.bitstream_name.txt]
-  append IMAGE_NAME [expr {$nvme_used == "TRUE" ? "_NVME" : ""}]
-  if { $bram_used == "TRUE" } {
-    set RAM_TYPE BRAM
-  } elseif { $sdram_used == "TRUE" } {
-    set RAM_TYPE SDRAM
-  } else {
-    set RAM_TYPE noSDRAM
-  }
-  append IMAGE_NAME [format {_%s_%s_%s} $RAM_TYPE $fpgacard $TIMING_TNS]
-
-  open_run     impl_1 -name impl_1 >> $log_file
-
-  ##
-  ### writing bitstream
-  set step write_bitstream
-  set logfile $log_dir/${step}.log
-  set command "write_bitstream -force -file ./Images/$IMAGE_NAME"
-  puts [format "%-*s %-*s %-*s %-*s" $widthCol1 "" $widthCol2 "generating bitstreams" $widthCol3 "type: user image" $widthCol4 "[clock format [clock seconds] -format %H:%M:%S]"]
-
-  if { [catch "$command > $logfile" errMsg] } {
-    puts [format "%-*s %-*s %-*s %-*s" $widthCol1 "" $widthCol2 "" $widthCol3 "ERROR: write_bitstream failed" $widthCol4 "" ]
-    puts [format "%-*s %-*s %-*s %-*s" $widthCol1 "" $widthCol2 "" $widthCol3 " please check $logfile" $widthCol4 "" ]
-  } else {
-    write_cfgmem -format bin -loadbit "up 0x0 ./Images/$IMAGE_NAME.bit" -file ./Images/$IMAGE_NAME -size 128 -interface BPIx16 -force >> $logfile
-  }
-
-}
-
 ##
 ## removing unnecessary files
 if { $remove_tmp_files == "TRUE" } {
   puts [format "%-*s %-*s %-*s %-*s" $widthCol1 "" $widthCol2 "removing temp files" $widthCol3 "" $widthCol4 "[clock format [clock seconds] -format %H:%M:%S]"]
-  exec rm -rf ./Checkpoints/framework_synth.dcp
-  exec rm -rf ./Checkpoints/framework_opt.dcp
-  exec rm -rf ./Checkpoints/framework_physopt.dcp
-  exec rm -rf ./Checkpoints/framework_placed.dcp
+  exec rm -f ./Checkpoints/snap_and_action_synth.dcp
+  exec rm -f ./Checkpoints/snap_and_action_opt.dcp
+  exec rm -f ./Checkpoints/snap_and_action_physopt.dcp
+  exec rm -f ./Checkpoints/snap_and_action_placed.dcp
+  exec rm -f ./Checkpoints/snap_and_action_routed.dcp
 }
 
 close_project  >> $log_file
