@@ -22,7 +22,6 @@ set root_dir    $::env(SNAP_HARDWARE_ROOT)
 set ip_dir      $root_dir/ip
 set hdl_dir     $root_dir/hdl
 set sim_dir     $root_dir/sim
-set pr_config   [string toupper $::env(PR_CONFIG)]
 set fpga_part   $::env(FPGACHIP)
 set fpga_card   $::env(FPGACARD)
 set psl_dcp     [file tail $::env(PSL_DCP)]
@@ -32,16 +31,21 @@ set bram_used   $::env(BRAM_USED)
 set sdram_used  $::env(SDRAM_USED)
 set ila_debug   [string toupper $::env(ILA_DEBUG)]
 set simulator   $::env(SIMULATOR)
-set vivadoVer   [version -short]
-set log_dir      $::env(LOGS_DIR)
-set log_file     $log_dir/create_framework.log
+set log_dir     $::env(LOGS_DIR)
+set log_file    $log_dir/create_framework.log
 
 if { [info exists ::env(HLS_SUPPORT)] == 1 } {
-    set hls_support [string toupper $::env(HLS_SUPPORT)]
+  set hls_support [string toupper $::env(HLS_SUPPORT)]
 } elseif { [string first "HLS" [string toupper $action_dir]] != -1 } {
   set hls_support "TRUE"
 } else {
   set hls_support "not defined"
+}
+
+if { [info exists ::env(USE_PRFLOW)] == 1 } {
+  set use_prflow [string toupper $::env(USE_PRFLOW)]
+} else {
+  set use_prflow "FALSE"
 }
 
 if { [info exists ::env(DENALI)] == 1 } {
@@ -91,9 +95,9 @@ set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.ARGS.DIRECTIVE Explore [get_runs i
 set_property STEPS.WRITE_BITSTREAM.TCL.PRE  $root_dir/setup/snap_bitstream_pre.tcl  [get_runs impl_1]
 set_property STEPS.WRITE_BITSTREAM.TCL.POST $root_dir/setup/snap_bitstream_post.tcl [get_runs impl_1]
 
-if { $pr_config == "TRUE" } {
+if { $use_prflow == "TRUE" } {
   # Enable PR Flow
-  set_property PR_FLOW 1 [current_project]
+  set_property PR_FLOW 1 [current_project]  >> $log_file
 
   # Create PR Region for SNAP Action
   create_partition_def -name snap_action -module action_wrapper
@@ -105,19 +109,24 @@ if { $pr_config == "TRUE" } {
 puts "	                        importing design files"
 # HDL Files
 add_files -scan_for_includes $hdl_dir/core/  >> $log_file
-if { $hls_support == "TRUE" } {
-  add_files -scan_for_includes $hdl_dir/hls/  >> $log_file
-}
 set_property used_in_simulation false [get_files $hdl_dir/core/psl_fpga.vhd]
 set_property top psl_fpga [current_fileset]
 # Action Files
-if { $pr_config == "TRUE" } {
+if { $use_prflow == "TRUE" } {
   # for Partial Reconfiguration Region
-  add_files -scan_for_includes -norecurse $hdl_dir/core/psl_accel_types.vhd -of_objects [get_reconfig_modules user_action] >> $log_file
+  add_files -scan_for_includes $hdl_dir/core/psl_accel_types.vhd -of_objects [get_reconfig_modules user_action] >> $log_file
+  add_files -scan_for_includes $hdl_dir/core/action_types.vhd -of_objects [get_reconfig_modules user_action] >> $log_file
+  if { $hls_support == "TRUE" } {
+    add_files -scan_for_includes $hdl_dir/hls/ -of_objects [get_reconfig_modules user_action] >> $log_file
+  }
   add_files -scan_for_includes $action_dir/ -of_objects [get_reconfig_modules user_action] >> $log_file
 } else {
-  add_files -fileset sources_1 -scan_for_includes $action_dir/ >> $log_file
+  if { $hls_support == "TRUE" } {
+    add_files -scan_for_includes $hdl_dir/hls/  >> $log_file
+  }
+  add_files -scan_for_includes $action_dir/ >> $log_file
 }
+
 # Sim Files
 set_property SOURCE_SET sources_1 [get_filesets sim_1]
 add_files    -fileset sim_1 -norecurse -scan_for_includes $sim_dir/core/top.sv  >> $log_file
@@ -206,7 +215,7 @@ if { $nvme_used == TRUE } {
   set_property synth_checkpoint_mode None [get_files  $ip_dir/nvme/nvme.srcs/sources_1/bd/nvme_top/nvme_top.bd] >> $log_file
   generate_target all                     [get_files  $ip_dir/nvme/nvme.srcs/sources_1/bd/nvme_top/nvme_top.bd] >> $log_file
 
-    if { ( [info exists ::env(DENALI_TOOLS) ] == 1)  &&  ( [info exists ::env(DENALI_CUSTOM)] == 1 ) } {
+  if { ( [info exists ::env(DENALI_TOOLS) ] == 1)  &&  ( [info exists ::env(DENALI_CUSTOM)] == 1 ) } {
     puts "	                        adding Denali simulation files"
     set denali_custom $::env(DENALI_CUSTOM)
     add_files -fileset sim_1 -scan_for_includes $sim_dir/nvme/
@@ -226,7 +235,7 @@ if { $nvme_used == TRUE } {
 puts "	                        importing PSL design checkpoint"
 read_checkpoint -cell b $root_dir/build/Checkpoints/$psl_dcp -strict >> $log_file
 
-if { $pr_config == "TRUE" } {
+if { $use_prflow == "TRUE" } {
   # Create PR Configuration
   create_pr_configuration -name config_1 -partitions [list a0/action_w:user_action]
   # PR Synthesis
@@ -247,13 +256,16 @@ if { $pr_config == "TRUE" } {
 puts "	                        importing XDCs"
 add_files -fileset constrs_1 -norecurse $root_dir/setup/snap_link.xdc
 set_property used_in_synthesis false [get_files  $root_dir/setup/snap_link.xdc]
-if { $pr_config == "TRUE" } {
+
+if { $use_prflow == "TRUE" } {
   add_files -fileset constrs_1 -norecurse $root_dir/setup/action_pblock.xdc
   set_property used_in_synthesis false [get_files  $root_dir/setup/action_pblock.xdc]
   add_files -fileset constrs_1 -norecurse $root_dir/setup/snap_pblock.xdc
   set_property used_in_synthesis false [get_files  $root_dir/setup/snap_pblock.xdc]
 }
+
 update_compile_order -fileset sources_1 >> $log_file
+
 # DDR XDCs
 if { $fpga_card == "KU3" } {
   if { $bram_used == "TRUE" } {

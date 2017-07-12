@@ -49,8 +49,8 @@ ifndef NVME_USED
 	export NVME_USED=FALSE
 endif
 
-ifndef PR_CONFIG
-	export PR_CONFIG=FALSE
+ifndef USE_PRFLOW
+	export USE_PRFLOW=FALSE
 endif
 
 ## variables only for this Makefile
@@ -69,7 +69,7 @@ SNAP_CONFIG_FILES=$(SNAP_HDL_CORE)/psl_fpga.vhd \
                   $(SNAP_SIM_CORE)/top.sv
 
 
-.PHONY: all clean gitclean check_snap_settings image model action_config setup_environment create_environment config patch_version cloud_image snap_config snap_config_start
+.PHONY: all clean gitclean check_snap_settings check_denali model action_config setup_environment create_environment config patch_version patch_NVMe image cloud_image snap_config snap_config_start pslse software xsim irun questa
 
 all: config model image
 
@@ -205,8 +205,8 @@ patch_NVMe:
 	fi
 
 image: snap_config patch_version
-	@if [ `echo "$(PR_CONFIG)" | tr a-z A-Z` = "TRUE" ]; then \
-		echo -e "\tTarget image not allowed for PR configuration!"; exit -1; \
+	@if [ `echo "$(USE_PRFLOW)" | tr a-z A-Z` = "TRUE" ]; then \
+		echo -e "\tMakefile target $@ not allowed for PR flow!"; exit -1; \
 	fi
 	@echo -e "\t[BUILD IMAGE.........] start `date`"
 	@cd $(BUILD_DIR) && vivado -quiet -mode batch -source snap_build.tcl -notrace -log $(LOGS_DIR)/snap_build.log -journal $(LOGS_DIR)/snap_build.jou
@@ -215,8 +215,8 @@ image: snap_config patch_version
 #	@grep -A6 "Design Timing Summary" $(BUILD_DIR)/Reports/timing_summary.rpt | egrep -v "^$|^\-\-"
 
 cloud_image: snap_config patch_version
-	@if [ `echo "$(PR_CONFIG)" | tr a-z A-Z` != "TRUE" ]; then \
-		echo -e "\tTarget cloud_image is only allowed for PR configuration!"; exit -1; \
+	@if [ `echo "$(USE_PRFLOW)" | tr a-z A-Z` != "TRUE" ]; then \
+		echo -e "\tMakefile target $@ is only allowed for PR flow!"; exit -1; \
 	fi
 	@echo -e "\t[BUILD CLOUD IMAGE...] start `date`"
 	@cd $(BUILD_DIR) && vivado -quiet -mode batch -source snap_cloud_build.tcl -notrace -log $(LOGS_DIR)/snap_cloud_build.log -journal $(LOGS_DIR)/snap_cloud_build.jou

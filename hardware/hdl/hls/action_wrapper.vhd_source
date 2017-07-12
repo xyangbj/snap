@@ -24,48 +24,7 @@ USE ieee.std_logic_unsigned.all;
 USE ieee.numeric_std.all;
 
 USE work.psl_accel_types.ALL;
-
-PACKAGE action_types IS
-
-CONSTANT    C_M_AXI_CARD_MEM0_ID_WIDTH       : integer   := C_DDR_AXI_ID_WIDTH;
-CONSTANT    C_M_AXI_CARD_MEM0_ADDR_WIDTH     : integer   := C_DDR_AXI_ADDR_WIDTH;
-CONSTANT    C_M_AXI_CARD_MEM0_DATA_WIDTH     : integer   := C_DDR_AXI_DATA_WIDTH;
-CONSTANT    C_M_AXI_CARD_MEM0_AWUSER_WIDTH   : integer   := C_DDR_AXI_AWUSER_WIDTH;
-CONSTANT    C_M_AXI_CARD_MEM0_ARUSER_WIDTH   : integer   := C_DDR_AXI_ARUSER_WIDTH;
-CONSTANT    C_M_AXI_CARD_MEM0_WUSER_WIDTH    : integer   := C_DDR_AXI_WUSER_WIDTH;
-CONSTANT    C_M_AXI_CARD_MEM0_RUSER_WIDTH    : integer   := C_DDR_AXI_RUSER_WIDTH;
-CONSTANT    C_M_AXI_CARD_MEM0_BUSER_WIDTH    : integer   := C_DDR_AXI_BUSER_WIDTH;
-
-    -- Parameters for Axi Slave Bus Interface AXI_CTRL_REG
-CONSTANT    C_S_AXI_CTRL_REG_DATA_WIDTH      : integer   := C_REG_DATA_WIDTH;
-CONSTANT    C_S_AXI_CTRL_REG_ADDR_WIDTH      : integer   := C_REG_ADDR_WIDTH;
-
-    -- Parameters for Axi Master Bus Interface AXI_HOST_MEM : to Host memory
-CONSTANT    C_M_AXI_HOST_MEM_ID_WIDTH        : integer   := C_HOST_AXI_ID_WIDTH;
-CONSTANT    C_M_AXI_HOST_MEM_ADDR_WIDTH      : integer   := C_HOST_AXI_ADDR_WIDTH;
-CONSTANT    C_M_AXI_HOST_MEM_DATA_WIDTH      : integer   := C_HOST_AXI_DATA_WIDTH;
-CONSTANT    C_M_AXI_HOST_MEM_AWUSER_WIDTH    : integer   := CONTEXT_BITS;
-CONSTANT    C_M_AXI_HOST_MEM_ARUSER_WIDTH    : integer   := CONTEXT_BITS;
-CONSTANT    C_M_AXI_HOST_MEM_WUSER_WIDTH     : integer   := C_HOST_AXI_WUSER_WIDTH;
-CONSTANT    C_M_AXI_HOST_MEM_RUSER_WIDTH     : integer   := C_HOST_AXI_RUSER_WIDTH;
-CONSTANT    C_M_AXI_HOST_MEM_BUSER_WIDTH     : integer   := C_HOST_AXI_BUSER_WIDTH;
-
-END action_types;
-
-
-PACKAGE BODY action_types IS
-
-END action_types;
-
-
-LIBRARY ieee;
-USE ieee.std_logic_1164.all;
-USE ieee.std_logic_misc.all;
-USE ieee.std_logic_unsigned.all;
-USE ieee.numeric_std.all;
-
-USE work.psl_accel_types.ALL;
-USE work.action_types.all;
+USE work.action_types.ALL;
 
 
 ENTITY action_wrapper IS
@@ -244,6 +203,7 @@ ARCHITECTURE STRUCTURE OF action_wrapper IS
   SIGNAL interrupt_q            : STD_LOGIC;
   SIGNAL interrupt_wait_ack_q   : STD_LOGIC;
   SIGNAL context_q              : STD_LOGIC_VECTOR(CONTEXT_BITS-1 DOWNTO 0);
+  SIGNAL hls_rst_buf            : STD_LOGIC;
 
   COMPONENT hls_action
     GENERIC (
@@ -471,7 +431,7 @@ BEGIN
   )
   PORT MAP (
     ap_clk                       => ap_clk,
-    ap_rst_n                     => ap_rst_n,
+    ap_rst_n                     => hls_rst_buf,
     m_axi_card_mem0_araddr       => m_axi_card_mem0_araddr,                                -- only for DDRI_USED=TRUE
     m_axi_card_mem0_arburst      => m_axi_card_mem0_arburst,                               -- only for DDRI_USED=TRUE
     m_axi_card_mem0_arcache      => m_axi_card_mem0_arcache,                               -- only for DDRI_USED=TRUE
@@ -625,6 +585,13 @@ BEGIN
     m_axi_host_mem_wvalid        => m_axi_host_mem_wvalid,
     interrupt                    => interrupt_i
   );
+
+  rst: PROCESS (ap_clk)
+  BEGIN  -- PROCESS rst
+    IF rising_edge(ap_clk) THEN
+      hls_rst_buf <= ap_rst_n;
+    END IF;                                     -- rising_edge(ap_clk)
+  END PROCESS rst;
 
   ctx: PROCESS (ap_clk)
   BEGIN  -- PROCESS ctx
