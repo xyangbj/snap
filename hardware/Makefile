@@ -69,7 +69,7 @@ SNAP_CONFIG_FILES=$(SNAP_HDL_CORE)/psl_fpga.vhd \
                   $(SNAP_SIM_CORE)/top.sv
 
 
-.PHONY: all clean gitclean check_snap_settings check_denali model action_config setup_environment create_environment config patch_version patch_NVMe image snap_static_region snap_config snap_config_start pslse software xsim irun questa
+.PHONY: all clean gitclean check_snap_settings check_denali model action_config prepare_environment create_environment config patch_version patch_NVMe image snap_static_region user_action combine_dcps snap_config snap_config_start pslse software xsim irun questa
 
 all: config model image
 
@@ -125,8 +125,8 @@ check_denali:
 		fi \
 	fi
 
-setup_environment:
-	@echo -e "\t[COPY................] psl build env";
+prepare_environment:
+	@echo -e "\t[PREPARE ENVIRONMENT.]";
 	@mkdir -p $(BUILD_DIR);
 	@mkdir -p $(BUILD_DIR)/Reports;
 	@mkdir -p $(LOGS_DIR);
@@ -134,6 +134,8 @@ setup_environment:
 	@mkdir -p $(BUILD_DIR)/Checkpoints;
 	@ln -f -s $(SNAP_HARDWARE_ROOT)/setup/snap_build.tcl         $(BUILD_DIR)/snap_build.tcl;
 	@ln -f -s $(SNAP_HARDWARE_ROOT)/setup/snap_static_region.tcl $(BUILD_DIR)/snap_static_region.tcl;
+	@ln -f -s $(SNAP_HARDWARE_ROOT)/setup/user_action.tcl        $(BUILD_DIR)/user_action.tcl;
+	@ln -f -s $(SNAP_HARDWARE_ROOT)/setup/combine_dcps.tcl       $(BUILD_DIR)/combine_dcps.tcl;
 	@cp -p $(PSL_DCP)                                            $(BUILD_DIR)/Checkpoints/;
 	@if [ $(FPGACARD) = "KU3" ]; then \
 		ln -f -s $(SNAP_HDL_CORE)/psl_fpga_ku3.vhd_source    $(SNAP_HDL_CORE)/psl_fpga.vhd_source; \
@@ -151,12 +153,13 @@ setup_environment:
 	@$(SNAP_HARDWARE_ROOT)/setup/snap_config.sh $@_source $@
 
 snap_config: snap_config_start $(SNAP_CONFIG_FILES)
+	@echo -e "\t[CONFIG SNAP_CORE....] done `date`";
 
 snap_config_start:
-	@echo -e "\t[CONFIG SNAP_CORE....] start";
+	@echo -e "\t[CONFIG SNAP_CORE....] start `date`";
 
 action_config: $(ACTION_ROOT)
-	@echo -e "\t[CONFIG ACTION.......] start";
+	@echo -e "\t[CONFIG ACTION.......] start `date`";
 	@if [ -e "$(ACTION_ROOT)/Makefile" ]; then \
 		make -C $(ACTION_ROOT) > $(LOGS_DIR)/action_make.log; \
 		if [ $$? -ne 0 ]; then \
@@ -189,7 +192,7 @@ create_environment:
 	@cd $(SNAP_HARDWARE_ROOT)/setup                                    && vivado -quiet -mode batch -source create_framework.tcl -notrace -log $(LOGS_DIR)/create_framework.log  -journal $(LOGS_DIR)/create_framework.jou
 	@echo -e "\t[CREATE_ENVIRONMENT..] done `date`"
 
-config: check_snap_settings setup_environment snap_config action_config create_environment patch_version patch_NVMe
+config: check_snap_settings prepare_environment snap_config action_config create_environment patch_version patch_NVMe
 	@echo -e "\t[CONFIG..............] done `date`"
 
 patch_version:
@@ -215,12 +218,24 @@ snap_static_region: snap_config patch_version
 	@if [ `echo "$(USE_PRFLOW)" | tr a-z A-Z` != "TRUE" ]; then \
 		echo -e "\tMakefile target $@ is only allowed for PR flow!"; exit -1; \
 	fi
-	@echo -e "\t[SNAP STATIC REGION...] Creating black boxed DCP: start `date`"
+	@echo -e "\t[SNAP STATIC REGION..] Creating black boxed DCP: start `date`"
 	@cd $(BUILD_DIR) && vivado -quiet -mode batch -source snap_static_region.tcl -notrace -log $(LOGS_DIR)/snap_static_region.log -journal $(LOGS_DIR)/snap_static_region.jou
-	@echo -e "\t[SNAP STATIC REGION...] done  `date`"
+	@echo -e "\t[SNAP STATIC REGION..] done  `date`"
 	@rm -r -f .bitstream_name.txt
 
-combine_dcps: setup_environment
+user_action: check_snap_settings prepare_environment snap_config action_config patch_version
+	@if [ `echo "$(USE_PRFLOW)" | tr a-z A-Z` != "TRUE" ]; then \
+		echo -e "\tMakefile target $@ is only allowed for PR flow!"; exit -1; \
+	fi
+	@echo -e "\t[USER ACTION.........] Creating user action DCP: start `date`"
+	@echo -e "\t                        using `vivado -version |grep Vivado`"
+	@cd $(SNAP_HARDWARE_ROOT)/setup                                    && vivado -quiet -mode batch -source create_ip.tcl        -notrace -log $(LOGS_DIR)/create_ip.log         -journal $(LOGS_DIR)/create_ip.jou
+	@if [ $(NVME_USED) = "TRUE" ]; then cd $(SNAP_HARDWARE_ROOT)/setup && vivado -quiet -mode batch -source create_nvme_host.tcl -notrace -log $(LOGS_DIR)/create_nvme_host.log  -journal $(LOGS_DIR)/create_nvme_host.jou; fi
+	@cd $(BUILD_DIR) && vivado -quiet -mode batch -source user_action.tcl -notrace -log $(LOGS_DIR)/user_action.log -journal $(LOGS_DIR)/user_action.jou
+	@echo -e "\t[USER ACTION.........] done  `date`"
+	@rm -r -f .bitstream_name.txt
+
+combine_dcps: prepare_environment
 	@echo -e "\t[COMBINING DCPS......] start `date`";
 	@if [ ! -d "$(DCP_ROOT)" ]; then \
 		echo "Missing path to DCP checkpoints"; \
@@ -229,7 +244,7 @@ combine_dcps: setup_environment
 		exit 1; \
 	fi
 	@echo -e "\t                        using `vivado -version |grep Vivado`"
-	@cd $(SNAP_HARDWARE_ROOT)/setup                                    && vivado -quiet -mode batch -source combine_dcps.tcl -notrace -log $(LOGS_DIR)/combine_dcps.log  -journal $(LOGS_DIR)/combine_dcps.jou
+	@cd $(BUILD_DIR) && vivado -quiet -mode batch -source combine_dcps.tcl -notrace -log $(LOGS_DIR)/combine_dcps.log  -journal $(LOGS_DIR)/combine_dcps.jou
 	@echo -e "\t[COMBINING DCPS......] done `date`"
 
 model: check_denali pslse software snap_config patch_version $(SIMULATOR)
