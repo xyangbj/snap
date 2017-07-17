@@ -114,8 +114,13 @@ static inline void snap_4KiB_get(snap_4KiB_t *buf, snap_membus_t *line)
  */
 static inline void snap_4KiB_flush(snap_4KiB_t *buf)
 {
+#define CONFIG_SKIP_WRITE_BOUNDS_CHECK
+#ifdef CONFIG_SKIP_WRITE_BOUNDS_CHECK
+	unsigned short tocopy = buf->b_idx;
+#else
 	unsigned short free_lines = buf->max_lines - buf->m_idx;
 	unsigned short tocopy = MIN(free_lines, buf->b_idx);
+#endif
 
 #if defined(CONFIG_4KIB_DEBUG)
 	fprintf(stderr, "4KiB buffer %d lines, writing %d bytes "
