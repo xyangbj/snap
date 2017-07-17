@@ -33,9 +33,10 @@ snap_memcopy_objs = action_memcopy.o
 snap_checksum_objs = action_checksum.o sha3.o
 snap_hashjoin_objs = action_hashjoin.o
 snap_bfs_objs = action_bfs.o
+snap_bfs_nvme_objs = action_bfs_nvme.o
 snap_intersect_objs = action_intersect.o
 
-projs = snap_search snap_memcopy snap_checksum snap_hashjoin snap_bfs snap_intersect
+projs = snap_search snap_memcopy snap_checksum snap_hashjoin snap_bfs snap_bfs_nvme snap_intersect
 projs += snap_example snap_example_ddr snap_example_set snap_example_nvme
 
 all: $(objs) $(projs)
@@ -45,11 +46,12 @@ snap_memcopy: action_memcopy.o
 snap_checksum: action_checksum.o sha3.o
 snap_hashjoin: action_hashjoin.o
 snap_bfs: action_bfs.o
+snap_bfs_nvme: action_bfs_nvme.o
 snap_intersect: action_intersect.o
 
 $(projs): $(libs)
 
-objs += action_search.o action_memcopy.o action_checksum.o action_hashjoin.o keccak.o action_bfs.o action_intersect.o
+objs += action_search.o action_memcopy.o action_checksum.o action_hashjoin.o keccak.o action_bfs.o action_bfs_nvme.o action_intersect.o
 
 ### Deactivate existing implicit rule
 %: %.c
