@@ -81,7 +81,8 @@ struct snap_card {
 	uint16_t vendor_id;
 	uint16_t device_id;
 	snap_action_type_t action_type;	/* Action Type */
-	snap_action_type_t queue_type;  /* Action type for queue */
+	snap_action_flag_t action_flags;
+	
 	uint32_t sat;                   /* Short Action Type */
 	bool start_attach;
 	snap_action_flag_t flags;       /* Flags from Application */
@@ -621,10 +622,12 @@ int snap_card_ioctl(struct snap_card *_card, unsigned int cmd, unsigned long arg
 
 struct snap_queue *snap_queue_alloc(struct snap_card *card,
 				    snap_action_type_t action_type,
+				    snap_action_flag_t action_flags,
 				    unsigned int queue_length __unused,
 				    unsigned int attach_timeout_sec)
 {
-	card->queue_type = action_type;
+	card->action_type = action_type;
+	card->action_flags = action_flags;
 	card->queue_length = queue_length;
 	card->attach_timeout_sec = attach_timeout_sec;
 
@@ -645,15 +648,16 @@ int snap_queue_sync_execute_job(struct snap_queue *queue,
 	struct snap_card *card = (struct snap_card *)queue;
 
 	return snap_sync_execute_job(card, card->action_type,
-				     (SNAP_ACTION_DONE_IRQ | SNAP_ATTACH_IRQ),
-				     cjob, card->attach_timeout_sec,
+				     card->action_flags,
+				     cjob,
+				     card->attach_timeout_sec,
 				     timeout_sec);
 }
 
 void snap_queue_free(struct snap_queue *queue __unused)
 {
 	struct snap_card *card = (struct snap_card *)queue;
-	card->queue_type = 0xffffffff;
+	card->action_type = 0xffffffff;
 }
 
 /*****************************************************************************
@@ -708,6 +712,7 @@ int snap_action_completed(struct snap_action *action, int *rc, int timeout)
 	}
 	if (rc)
 		*rc = _rc;
+
 	return (action_data & ACTION_CONTROL_IDLE) == ACTION_CONTROL_IDLE;
 }
 
@@ -793,10 +798,16 @@ int snap_action_sync_execute_job(struct snap_action *action,
 	snap_action_start(action);
 	completed = snap_action_completed(action, &rc, timeout_sec);
 
+	/* Issue #360 */
+	if (rc != 0) {
+		snap_trace("%s: EIO rc=%d completed=%d\n", __func__,
+			   rc, completed);
+		rc = SNAP_EIO;
+		goto __snap_action_sync_execute_job_exit;
+	}
 	if (completed == 0) {
 		/* Not done */
-		snap_trace("%s: rc=%d completed=%d\n", __func__,
-			   rc, completed);
+		snap_trace("%s: rc=%d\n", __func__, rc);
 		if (rc == 0) {
 			errno = ETIME;
 			rc = SNAP_ETIMEDOUT;
@@ -826,7 +837,8 @@ int snap_action_sync_execute_job(struct snap_action *action,
 		rc = snap_mmio_read32(card, action_addr, &job_data[i]);
 		if (rc != 0)
 			goto __snap_action_sync_execute_job_exit;
-		snap_trace("  %s: %d Addr: %x Data: %x\n", __func__, i, action_addr, job_data[i]);
+		snap_trace("  %s: %d Addr: %x Data: %x\n", __func__, i,
+			   action_addr, job_data[i]);
 	}
 
 __snap_action_sync_execute_job_exit:
