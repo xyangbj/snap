@@ -131,7 +131,7 @@ static int create_graph_data(NodeProperty_t * np_array, RelProperty_t * rp_array
     // For each node, decide the "fanout" and create relationships (edges)
     // 
     uint64_t second, fanout;
-    uint64_t e;
+    uint64_t e=0;
     for (i = 0; i < node_num; i++) {
         fanout = (rand() % (node_num/2)); //Example setting!!
                                           //Be careful at RAND_MAX in stdlib.h

@@ -245,6 +245,7 @@ static void bfs (NodeRecordFmt_t * nr_list_fmt, RelRecordFmt_t * rr_list_fmt,
     uint64_t current = 0; 
     uint64_t cnt = 0;
 
+    printf("%ld,\n", qualifier);
     //initilize to all zero.
     for (i = 0; i < node_num; i++)
         visited[i] = 0;
