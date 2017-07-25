@@ -114,7 +114,7 @@ static int basic(struct bloom * bloom)
 static int perf_loop(int entries, int count,
 		unsigned int error_rate, struct bloom * bloom)
 {
-  char rc;
+  //char rc;
   unsigned int j;
   double error = 1.0;
   printf("----- perf_loop -----\n");
@@ -123,7 +123,8 @@ static int perf_loop(int entries, int count,
   //assert(bloom_init(&bloom, entries, 0.001) == 0);
   for(j = 0; j < error_rate; j++)
   	error = error / 10.;
-  rc = (bloom_init(bloom, entries, error) == 0 ? 0 : 1);
+  //rc = (bloom_init(bloom, entries, error) == 0 ? 0 : 1);
+  bloom_init(bloom, entries, error);
   bloom_print(bloom);
 
   int i;
@@ -168,7 +169,7 @@ static uint64_t bloom_main(uint32_t test_choice, uint32_t nb_calls,
 {
         uint32_t run_number;
         uint32_t collisions=0; 
-        int rc=1;
+        //int rc=1;
 
         act_trace("%s(%d, %d)\n", __func__, nb_calls, entries);
         act_trace("  sw: NB_CALLS=%d COUNT=%d\n", nb_calls, count);
@@ -185,15 +186,16 @@ static uint64_t bloom_main(uint32_t test_choice, uint32_t nb_calls,
                                (long long)collisions_tmp,
                                (long long)collisions);
                 }
-                rc = 0;
+                //rc = 0;
         }
                 break;
         case(BLOOM_BASIC):
-                rc = basic(bloom); // no parameters
+                //rc = basic(bloom); // no parameters
+                basic(bloom); // no parameters
                 collisions = 0;
                 break;
         default:
-                rc = 1;
+                //rc = 1;
                 break;
         }
 

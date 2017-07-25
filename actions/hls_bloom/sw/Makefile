@@ -31,5 +31,7 @@ snap_bloom: action_bloom.o MurmurHash2.o bloom.o
 snap_bloom_objs = action_bloom.o MurmurHash2.o bloom.o
 
 projs += snap_bloom
+#add specific math library link
+LDLIBS += $(libs) -lm
 
 include ../../software.mk
