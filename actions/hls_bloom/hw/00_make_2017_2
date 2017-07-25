@@ -1,0 +1,6 @@
+source /afs/bb/proj/fpga/xilinx/Vivado_HLS/2016.4/.settings64-Vivado_High_Level_Synthesis.sh
+#source /afs/bb/proj/fpga/xilinx/Vivado_HLS/2017.2/.settings64-Vivado_High_Level_Synthesis.sh
+make clean
+grep "define RELEASE_LEVEL" *.H
+make
+grep HLS_SYN_FF ./*/*/syn/vhdl/hls_action.vhd
