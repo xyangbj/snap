@@ -1,2 +1,0 @@
-source /afs/bb/proj/fpga/xilinx/Vivado_HLS/2016.4/.settings64-Vivado_High_Level_Synthesis.sh
-vivado_hls &
