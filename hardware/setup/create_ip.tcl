@@ -27,6 +27,8 @@ set bram_used    $::env(BRAM_USED)
 set nvme_used    $::env(NVME_USED)
 set log_dir      $::env(LOGS_DIR)
 set log_file     $log_dir/create_ip.log
+set act_root     $::env(ACTION_ROOT)
+set usr_ip_dir   $root_dir/ip/managed_ip_project/managed_ip_project.srcs/sources_1/ip
 
 ## Create a new Vivado IP Project
 puts "	\[CREATE_IPs..........\] start"
@@ -351,6 +353,18 @@ if { $create_ddr4 == "TRUE" } {
   puts "	                        generating ddr4sdram example"
   open_example_project -in_process -force -dir $ip_dir     [get_ips ddr4sdram] >> $log_file
 }
+
+puts "	\[CREATE_VHDL_IPs..........\] start"
+foreach x [glob -dir $act_root *.tcl] {
+    source $x >> $log_file
+    foreach y [glob -dir $usr_ip_dir *] {
+        set z [glob -dir $y *.xci]
+        #puts $z
+        export_ip_user_files -of_objects [get_files $z] -no_script -force  >> $log_file
+        export_simulation -of_objects [get_files $z] -directory $ip_dir/ip_user_files/sim_scripts -force >> $log_file
+}
+}
+puts "	\[CREATE_VHDL_IPs..........\] done"
 
 puts "	\[CREATE_IPs..........\] done"
 close_project >> $log_file
