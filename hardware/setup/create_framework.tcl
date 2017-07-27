@@ -25,15 +25,15 @@ set sim_dir     $root_dir/sim
 set fpga_part   $::env(FPGACHIP)
 set fpga_card   $::env(FPGACARD)
 set psl_dcp     [file tail $::env(PSL_DCP)]
-set action_dir  $::env(ACTION_ROOT)/hw
+set action_dir  $::env(ACTION_ROOT)
 set nvme_used   $::env(NVME_USED)
 set bram_used   $::env(BRAM_USED)
 set sdram_used  $::env(SDRAM_USED)
-set ila_debug   [string toupper $::env(ILA_DEBUG)]
 set simulator   $::env(SIMULATOR)
 set vivadoVer   [version -short]
 set log_dir      $::env(LOGS_DIR)
 set log_file     $log_dir/create_framework.log
+set usr_ip_dir  $ip_dir/managed_ip_project/managed_ip_project.srcs/sources_1/ip
 
 if { [info exists ::env(HLS_SUPPORT)] == 1 } {
     set hls_support [string toupper $::env(HLS_SUPPORT)]
@@ -84,11 +84,8 @@ set_property STEPS.PLACE_DESIGN.ARGS.DIRECTIVE Explore [get_runs impl_1]
 set_property STEPS.PHYS_OPT_DESIGN.IS_ENABLED true [get_runs impl_1]
 set_property STEPS.PHYS_OPT_DESIGN.ARGS.DIRECTIVE Explore [get_runs impl_1]
 set_property STEPS.ROUTE_DESIGN.ARGS.DIRECTIVE Explore [get_runs impl_1]
-set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.IS_ENABLED true [get_runs impl_1]
-set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.ARGS.DIRECTIVE Explore [get_runs impl_1]
 # Bitstream
-set_property STEPS.WRITE_BITSTREAM.TCL.PRE  $root_dir/setup/snap_bitstream_pre.tcl  [get_runs impl_1]
-set_property STEPS.WRITE_BITSTREAM.TCL.POST $root_dir/setup/snap_bitstream_post.tcl [get_runs impl_1]
+set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE true [get_runs impl_1]
 
 # Add Files
 # PSL Files
@@ -99,7 +96,6 @@ if { $hls_support == "TRUE" } {
   add_files -scan_for_includes $hdl_dir/hls/  >> $log_file
 }
 set_property used_in_simulation false [get_files $hdl_dir/core/psl_fpga.vhd]
-set_property top psl_fpga [current_fileset]
 # Action Files
 add_files            -fileset sources_1 -scan_for_includes $action_dir/
 # Sim Files
@@ -110,7 +106,7 @@ set_property used_in_synthesis false [get_files $sim_dir/core/top.sv]
 # DDR3 Sim Files
 if { ($fpga_card == "KU3") && ($sdram_used == "TRUE") } {
   add_files    -fileset sim_1 -norecurse -scan_for_includes $ip_dir/ddr3sdram_ex/imports/ddr3.v  >> $log_file
-  set_property file_type {Verilog Header}        [get_files $ip_dir/ddr3sdram_ex/imports/ddr3.v]
+  set_property file_type {Verilog Header}        [get_files $ip_dir/ddr3sdram_ex/imports/ddr3.v]  
   add_files    -fileset sim_1 -norecurse -scan_for_includes $sim_dir/core/ddr3_dimm.sv      >> $log_file
   set_property used_in_synthesis false           [get_files $sim_dir/core/ddr3_dimm.sv]
 }
@@ -138,6 +134,51 @@ add_files -norecurse  $ip_dir/fifo_10x512/fifo_10x512.xci >> $log_file
 export_ip_user_files -of_objects  [get_files  "$ip_dir/fifo_10x512/fifo_10x512.xci"] -force >> $log_file
 add_files -norecurse  $ip_dir/fifo_513x512/fifo_513x512.xci >> $log_file
 export_ip_user_files -of_objects  [get_files  "$ip_dir/fifo_513x512/fifo_513x512.xci"] -force >> $log_file
+
+foreach y [glob -dir $usr_ip_dir *] {
+   set z [glob -dir $y *.xci]
+   #puts $z
+   add_files -norecurse $z >> $log_file
+   export_ip_user_files -of_objects  [get_files "$z"] -force >> $log_file
+}
+
+#add_files -norecurse $usr_ip_dir/hls_action_ap_dadd_7_full_dsp_64/hls_action_ap_dadd_7_full_dsp_64.xci >> $log_file
+#export_ip_user_files -of_objects  [get_files "$usr_ip_dir/hls_action_ap_dadd_7_full_dsp_64/hls_action_ap_dadd_7_full_dsp_64.xci"] -force >> $log_file
+
+#add_files -norecurse $usr_ip_dir/hls_action_ap_dmul_8_max_dsp_64/hls_action_ap_dmul_8_max_dsp_64.xci >> $log_file
+#export_ip_user_files -of_objects  [get_files "$usr_ip_dir/hls_action_ap_dmul_8_max_dsp_64/hls_action_ap_dmul_8_max_dsp_64.xci"] -force >> $log_file
+
+#add_files -norecurse $usr_ip_dir/hls_action_ap_fadd_6_full_dsp_32/hls_action_ap_fadd_6_full_dsp_32.xci >> $log_file
+#export_ip_user_files -of_objects  [get_files "$usr_ip_dir/hls_action_ap_fadd_6_full_dsp_32/hls_action_ap_fadd_6_full_dsp_32.xci"] -force >> $log_file
+
+#add_files -norecurse $usr_ip_dir/hls_action_ap_fcmp_0_no_dsp_32/hls_action_ap_fcmp_0_no_dsp_32.xci >> $log_file
+#export_ip_user_files -of_objects  [get_files "$usr_ip_dir/hls_action_ap_fcmp_0_no_dsp_32/hls_action_ap_fcmp_0_no_dsp_32.xci"] -force >> $log_file
+
+#add_files -norecurse $usr_ip_dir/hls_action_ap_fdiv_14_no_dsp_32/hls_action_ap_fdiv_14_no_dsp_32.xci >> $log_file
+#export_ip_user_files -of_objects  [get_files "$usr_ip_dir/hls_action_ap_fdiv_14_no_dsp_32/hls_action_ap_fdiv_14_no_dsp_32.xci"] -force >> $log_file
+
+#add_files -norecurse $usr_ip_dir/hls_action_ap_flog_17_full_dsp_32/hls_action_ap_flog_17_full_dsp_32.xci >> $log_file
+#export_ip_user_files -of_objects  [get_files "$usr_ip_dir/hls_action_ap_flog_17_full_dsp_32/hls_action_ap_flog_17_full_dsp_32.xci"] -force >> $log_file
+
+#add_files -norecurse $usr_ip_dir/hls_action_ap_fmul_3_max_dsp_32/hls_action_ap_fmul_3_max_dsp_32.xci >> $log_file
+#export_ip_user_files -of_objects  [get_files "$usr_ip_dir/hls_action_ap_fmul_3_max_dsp_32/hls_action_ap_fmul_3_max_dsp_32.xci"] -force >> $log_file
+
+#add_files -norecurse $usr_ip_dir/hls_action_ap_fpext_0_no_dsp_32/hls_action_ap_fpext_0_no_dsp_32.xci >> $log_file
+#export_ip_user_files -of_objects  [get_files "$usr_ip_dir/hls_action_ap_fpext_0_no_dsp_32/hls_action_ap_fpext_0_no_dsp_32.xci"] -force >> $log_file
+
+#add_files -norecurse $usr_ip_dir/hls_action_ap_fptrunc_0_no_dsp_64/hls_action_ap_fptrunc_0_no_dsp_64.xci >> $log_file
+#export_ip_user_files -of_objects  [get_files "$usr_ip_dir/hls_action_ap_fptrunc_0_no_dsp_64/hls_action_ap_fptrunc_0_no_dsp_64.xci"] -force >> $log_file
+
+#add_files -norecurse $usr_ip_dir/hls_action_ap_fsqrt_14_no_dsp_32/hls_action_ap_fsqrt_14_no_dsp_32.xci >> $log_file
+#export_ip_user_files -of_objects  [get_files "$usr_ip_dir/hls_action_ap_fsqrt_14_no_dsp_32/hls_action_ap_fsqrt_14_no_dsp_32.xci"] -force >> $log_file
+
+#add_files -norecurse $usr_ip_dir/hls_action_ap_fsub_6_full_dsp_32/hls_action_ap_fsub_6_full_dsp_32.xci >> $log_file
+#export_ip_user_files -of_objects  [get_files "$usr_ip_dir/hls_action_ap_fsub_6_full_dsp_32/hls_action_ap_fsub_6_full_dsp_32.xci"] -force >> $log_file
+
+#add_files -norecurse $usr_ip_dir/hls_action_ap_sitofp_4_no_dsp_32/hls_action_ap_sitofp_4_no_dsp_32.xci >> $log_file
+#export_ip_user_files -of_objects  [get_files "$usr_ip_dir/hls_action_ap_sitofp_4_no_dsp_32/hls_action_ap_sitofp_4_no_dsp_32.xci"] -force >> $log_file
+
+
 # DDR3 / BRAM IPs
 if { $fpga_card == "KU3" } {
   if { $bram_used == "TRUE" } {
@@ -219,12 +260,11 @@ update_compile_order -fileset sources_1 >> $log_file
 # DDR XDCs
 if { $fpga_card == "KU3" } {
   if { $bram_used == "TRUE" } {
-    add_files -fileset constrs_1 -norecurse $root_dir/setup/KU3/snap_refclk200.xdc
+    add_files -fileset constrs_1 -norecurse $root_dir/setup/KU3/snap_refclk200.xdc 
   } elseif { $sdram_used == "TRUE" } {
-    add_files -fileset constrs_1 -norecurse $root_dir/setup/KU3/snap_refclk200.xdc
-    add_files -fileset constrs_1 -norecurse $root_dir/setup/KU3/snap_ddr3_b0pblock.xdc
-    add_files -fileset constrs_1 -norecurse $root_dir/setup/KU3/snap_ddr3_b0pins.xdc
-    set_property used_in_synthesis false [get_files $root_dir/setup/KU3/snap_ddr3_b0pins.xdc]
+    add_files -fileset constrs_1 -norecurse $root_dir/setup/KU3/snap_refclk200.xdc 
+    add_files -fileset constrs_1 -norecurse $root_dir/setup/KU3/snap_ddr3_b1pins.xdc
+    set_property used_in_synthesis false [get_files $root_dir/setup/KU3/snap_ddr3_b1pins.xdc]
   }
 } elseif { $fpga_card == "FGT" } {
   if { $bram_used == "TRUE" } {
@@ -239,9 +279,6 @@ if { $fpga_card == "KU3" } {
     add_files -fileset constrs_1 -norecurse  $root_dir/setup/FGT/snap_refclk100.xdc
     add_files -fileset constrs_1 -norecurse  $root_dir/setup/FGT/snap_nvme.xdc
   }
-}
-if { $ila_debug == "TRUE" } {
-  add_files -fileset constrs_1 -norecurse  $::env(ILA_SETUP_FILE)
 }
 
 puts "	\[CREATE_FRAMEWORK....\] done"
