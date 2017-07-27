@@ -27,8 +27,8 @@
 
 # This is solution specific. Check if we can replace this by generics too.
 
-snap_bfs: action_mc.o
-snap_bfs_objs = action_mc.o
+snap_mc: action_mc.o
+snap_mc_objs = action_mc.o
 
 projs += snap_mc
 
