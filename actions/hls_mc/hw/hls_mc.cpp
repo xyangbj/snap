@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "ap_int.h"
-#include "action_mc.h"
+#include "action_mc_hls.h"
 #include <hls_stream.h>
 
 #define NUM_ENG 50
