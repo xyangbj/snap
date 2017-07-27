@@ -1,8 +1,8 @@
-#ifndef __ACTION_MC_HLS_H__
-#define __ACTION_MC_HLS_H__
+#ifndef __ACTION_MC_H__
+#define __ACTION_MC_H__
 
 /*
- * Copyright 2017 International Business Machines
+ * Copyright 2016, 2017 International Business Machines
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,31 +17,23 @@
  * limitations under the License.
  */
 
-#include <stdint.h>
-#include <string.h>
-#include <ap_int.h>
-#include <hls_stream.h>
+#include <snap_types.h>
 
-#include <hls_snap.H>
-#include <action_mc.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#define CARD_DRAM_SIZE (1 * 1024 *1024 * 1024)
-#define MAX_NB_OF_BYTES_READ  (4 * 1024)
-#define MAX_NB_OF_WORDS_READ MAX_NB_OF_BYTES_READ/BPERDW
-#define BPERCL 128                           //128Bytes for one PSL Cacheline
-//typedef char word_t[BPERDW];
-//typedef snapu64_t address_t;
+#define MC_ACTION_TYPE 0x10141010
 
-//#define PATTERN_SIZE BPERDW
-//#define TEXT_SIZE    4096 * MAX_NB_OF_BYTES_READ // used for streaming only
-//#define HOST2DDR 0
-//#define DDR2HOST 1
+typedef struct mc_job_t {
+	struct snap_addr in;	/* input data */
+	struct snap_addr out;   /* output table */
+        int seed;
+        float result;
+} mc_job_t;
 
-//---------------------------------------------------------------------
-typedef struct {
-        CONTROL Control;       /*  16 bytes */
-        mc_job_t Data;     /* 108 Bytes */
-	uint8_t padding[SNAP_HLS_JOBSIZE - sizeof(mc_job_t)];
-} action_reg;
+#ifdef __cplusplus
+}
+#endif
 
-#endif  /* __ACTION_MC_HLS_H__ */
+#endif	/* __ACTION_MEMCOPY_H__ */
