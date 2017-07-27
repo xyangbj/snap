@@ -1,0 +1,42 @@
+
+#!/usr/bin/bash
+echo "Preliminary setting starts."
+##
+export FRAMEWORK_ROOT=/afs/vlsilab.boeblingen.ibm.com/projects/fpga/framework/mesnet/
+#export LD_LIBRARY_PATH=$FRAMEWORK_ROOT/pslse/afu_driver/src:$FRAMEWORK_ROOT
+export SNAP_ROOT=$FRAMEWORK_ROOT/snap
+export ACTION_ROOT=/afs/vlsilab.boeblingen.ibm.com/projects/fpga/framework/mesnet/snap/actions/hls_mc
+export PSL_DCP=$FRAMEWORK_ROOT/Checkpoint/b_route_design.dcp
+export PSLSE_ROOT=$FRAMEWORK_ROOT/pslse
+export FPGACARD=KU3 
+export SDRAM_USED=FALSE
+#Xilinx
+export CTEPATH=/afs/apd.pok.ibm.com/data/vlsi/cte
+export XILINX_VIVADO=$CTEPATH/tools/xilinx/2016.4/Vivado/2016.4
+export XILINX_HLS=$CTEPATH/tools/xilinx/2016.4/Vivado_HLS/2016.4
+export XILINXD_LICENSE_FILE=2100@pokwinlic1.pok.ibm.com
+#Cadence
+export IES_LIBS=$FRAMEWORK_ROOT/snap/hardware/ies_lib
+export CDS_LIC_FILE=5280@dalicsrv4.austin.ibm.com
+export CDS_INST_DIR=$CTEPATH/tools/cds/Incisiv/latest
+export PATH=$PATH:${CDS_INST_DIR}/tools/bin:${XILINX_VIVADO}/bin:${XILINX_HLS}/bin
+##
+export SIMULATOR=xsim
+
+#export EXAMPLE=1
+#export DIMMTEST=$FRAMEWORK_ROOT/cards/dimm_test-admpcieku3-v3_0_0
+
+echo "FRAMEWORK_ROOT = "$FRAMEWORK_ROOT
+echo "LD_LIBRARY_PATH = "$LD_LIBRARY_PATH
+echo "ACTION_ROOT = "$ACTION_ROOT
+echo "CTEPATH = "$CTEPATH
+echo "XILINX_VIVADO = "$XILINX_VIVADO
+echo "XILINX_HLS = "$XILINX_HLS
+echo "XILINXD_LICENSE_FILE = "$XILINXD_LICENSE_FILE
+echo "IES_LIBS = "$IES_LIBS
+echo "CDS_LIC_FILE = "$CDS_LIC_FILE
+echo "CDS_INST_DIR = "$CDS_INST_DIR
+echo "PSLSE_ROOT = "$PSLSE_ROOT
+echo "FPGACARD = "$FPGACARD 
+echo "SIMULATOR = "$SIMULATOR
+echo "myset done."
