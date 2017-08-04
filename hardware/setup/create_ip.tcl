@@ -27,7 +27,14 @@ set bram_used    $::env(BRAM_USED)
 set nvme_used    $::env(NVME_USED)
 set log_dir      $::env(LOGS_DIR)
 set log_file     $log_dir/create_ip.log
-set act_root     $::env(ACTION_ROOT)
+set sol_dir $::env(SOL_DIR)
+set sol_name $::env(SOL_NAME)
+set action_dir   $::env(ACTION_ROOT)
+set fpga_dir  $sol_dir
+append fpga_dir  _
+append fpga_dir $fpga_part
+set act_root     $action_dir
+append act_root  hw/$fpga_dir/$sol_name/syn/vhdl
 set usr_ip_dir   $root_dir/ip/managed_ip_project/managed_ip_project.srcs/sources_1/ip
 
 ## Create a new Vivado IP Project
@@ -185,6 +192,7 @@ set create_interconect FALSE
 set create_bram        FALSE
 set create_ddr3        FALSE
 set create_ddr4        FALSE
+set create_ddr4_nsa    FALSE
 
 if { $fpga_card == "KU3" } {
   if { $bram_used == "TRUE" } {
@@ -193,6 +201,14 @@ if { $fpga_card == "KU3" } {
   } elseif { $sdram_used == "TRUE" } {
     set create_clock_conv  TRUE
     set create_ddr3        TRUE
+  }
+} elseif { $fpga_card == "NSA121B" } {
+  if { $bram_used == "TRUE" } {
+    set create_clock_conv  TRUE
+    set create_bram        TRUE
+  } elseif { $sdram_used == "TRUE" } {
+    set create_clock_conv  TRUE
+    set create_ddr4_nsa    TRUE
   }
 } elseif { $fpga_card == "FGT" } { 
   if { $bram_used == "TRUE" } {
@@ -217,7 +233,9 @@ if { $create_clock_conv == "TRUE" } {
   puts "	                        generating IP axi_clock_converter"
   create_ip -name axi_clock_converter -vendor xilinx.com -library ip -version 2.1 -module_name axi_clock_converter -dir $ip_dir  >> $log_file
 
-  if { ($sdram_used == "TRUE") && ( $fpga_card == "KU3" ) } {
+#KU3 uses 8GB DDR3 and NSA121B uses 8GB DDR4
+#FGT uses 4GB DDR4
+  if { ($sdram_used == "TRUE") && ( $fpga_card == "KU3"  || $fpga_card == "NSA121B") } {
     set_property -dict [list CONFIG.ADDR_WIDTH {33} CONFIG.DATA_WIDTH {512} CONFIG.ID_WIDTH {4}] [get_ips axi_clock_converter]
   } else {
     set_property -dict [list CONFIG.ADDR_WIDTH {32} CONFIG.DATA_WIDTH {512} CONFIG.ID_WIDTH {4}] [get_ips axi_clock_converter]
@@ -321,7 +339,7 @@ if { $create_ddr3 == "TRUE" } {
   open_example_project -in_process -force -dir $ip_dir [get_ips  ddr3sdram] >> $log_file  
 }
 
-#DDR4 create ddr4sdramm with ECC
+#DDR4 create ddr4sdramm with ECC (FGT)
 if { $create_ddr4 == "TRUE" } {
   puts "	                        generating IP ddr4sdram"
   create_ip -name ddr4 -vendor xilinx.com -library ip -version 2.* -module_name ddr4sdram -dir $ip_dir >> $log_file
@@ -354,7 +372,39 @@ if { $create_ddr4 == "TRUE" } {
   open_example_project -in_process -force -dir $ip_dir     [get_ips ddr4sdram] >> $log_file
 }
 
+#DDR4 create ddr4sdramm with ECC (NSA121B)
+if { $create_ddr4_nsa == "TRUE" } {
+  puts "	                        generating IP ddr4sdram"
+  create_ip -name ddr4 -vendor xilinx.com -library ip -version 2.* -module_name ddr4sdram -dir $ip_dir >> $log_file
+  set_property -dict [list                                                                   \
+                      CONFIG.C0.DDR4_MemoryPart {MT40A1G8PM-075E} 			     \
+                      CONFIG.C0.DDR4_TimePeriod {833} 				             \
+                      CONFIG.C0.DDR4_InputClockPeriod {2499} 				     \
+                      CONFIG.C0.DDR4_CasLatency {17} 					     \
+                      CONFIG.C0.DDR4_CasWriteLatency {12} 				     \
+                      CONFIG.C0.DDR4_DataWidth {72} 					     \
+                      CONFIG.C0.DDR4_AxiSelection {true} 				     \
+                      CONFIG.Simulation_Mode {Unisim} 				             \
+                      CONFIG.C0.DDR4_DataMask {NO_DM_NO_DBI} 				     \
+                      CONFIG.C0.DDR4_Ecc {true} 					     \
+                      CONFIG.C0.DDR4_AxiDataWidth {512} 				     \
+                      CONFIG.C0.DDR4_AxiAddressWidth {33} 				     \
+                      CONFIG.C0.DDR4_AxiIDWidth {4} 					     \
+                      CONFIG.C0.BANK_GROUP_WIDTH {2}					     \
+                     ] [get_ips ddr4sdram] >> $log_file
+  set_property generate_synth_checkpoint false [get_files $ip_dir/ddr4sdram/ddr4sdram.xci]
+  generate_target {instantiation_template}     [get_files $ip_dir/ddr4sdram/ddr4sdram.xci] >> $log_file
+  generate_target all                          [get_files $ip_dir/ddr4sdram/ddr4sdram.xci] >> $log_file
+  export_ip_user_files -of_objects             [get_files $ip_dir/ddr4sdram/ddr4sdram.xci] -no_script -force  >> $log_file
+  export_simulation -of_objects [get_files $ip_dir/ddr4sdram/ddr4sdram.xci] -directory $ip_dir/ip_user_files/sim_scripts -force >> $log_file
+
+  #DDR4 create ddr4sdramm example design
+  puts "	                        generating ddr4sdram example"
+  open_example_project -in_process -force -dir $ip_dir     [get_ips ddr4sdram] >> $log_file
+}
+
 puts "	\[CREATE_VHDL_IPs..........\] start"
+put $act_root
 foreach x [glob -dir $act_root *.tcl] {
     source $x >> $log_file
     foreach y [glob -dir $usr_ip_dir *] {
