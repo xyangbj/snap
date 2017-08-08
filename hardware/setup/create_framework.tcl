@@ -148,7 +148,7 @@ export_ip_user_files -of_objects  [get_files  "$ip_dir/fifo_10x512/fifo_10x512.x
 add_files -norecurse  $ip_dir/fifo_513x512/fifo_513x512.xci >> $log_file
 export_ip_user_files -of_objects  [get_files  "$ip_dir/fifo_513x512/fifo_513x512.xci"] -force >> $log_file
 
-foreach y [glob -dir $usr_ip_dir *] {
+foreach y [glob -nocomplain -dir $usr_ip_dir *] {
    set z [glob -dir $y *.xci]
    #puts $z
    add_files -norecurse $z >> $log_file
