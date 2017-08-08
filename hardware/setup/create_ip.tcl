@@ -405,11 +405,13 @@ if { $create_ddr4_nsa == "TRUE" } {
 
 puts "	\[CREATE_VHDL_IPs..........\] start"
 put $act_root
-foreach x [glob -dir $act_root *.tcl] {
+foreach x [glob -nocomplain -dir $act_root *.tcl] {
     source $x >> $log_file
     foreach y [glob -dir $usr_ip_dir *] {
         set z [glob -dir $y *.xci]
         #puts $z
+        generate_target {instantiation_template} [get_files $z] >> $log_file
+        generate_target all                      [get_files $z] >> $log_file
         export_ip_user_files -of_objects [get_files $z] -no_script -force  >> $log_file
         export_simulation -of_objects [get_files $z] -directory $ip_dir/ip_user_files/sim_scripts -force >> $log_file
 }
